@@ -1,0 +1,39 @@
+{
+  "name": "shopify-cloner",
+  "version": "1.0.0",
+  "description": "Full-fidelity Shopify store migration and cloning engine with zero data loss",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "setup": "tsc && node dist/setup.js",
+    "check:source": "tsc && node dist/check-source.js",
+    "inventory": "tsc && node dist/inventory-cli.js",
+    "backup": "tsc && node dist/backup-cli.js",
+    "scan": "tsc && node dist/scan-cli.js",
+    "repair": "tsc && node dist/repair-cli.js",
+    "theme": "tsc && node dist/theme-cli.js",
+    "validate-schema": "tsc && node dist/validate-schema-cli.js",
+    "compat": "tsc && node dist/compat-cli.js",
+    "migrate": "tsc && node dist/migrate-cli.js",
+    "report": "tsc && node dist/report-cli.js",
+    "dashboard": "tsc && node dist/dashboard-cli.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  }
+}

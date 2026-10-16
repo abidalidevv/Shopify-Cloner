@@ -1,0 +1,22 @@
+# CRITICAL: secrets must never be committed
+.env
+
+node_modules/
+dist/
+repos/
+backups/
+*.log
+*.jsonl
+STOP
+
+# checkpoint state files are local only
+checkpoints/
+scratch/
+mappings/
+reports/
+working/
+*.csv
+
+# OS
+.DS_Store
+Thumbs.db

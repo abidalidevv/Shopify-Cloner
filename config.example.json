@@ -1,0 +1,12 @@
+{
+  "apiVersion": "2026-10",
+  "source": {
+    "shop": "tibbeshifa.myshopify.com",
+    "authMode": "client_credentials"
+  },
+  "destination": {
+    "shop": "",
+    "authMode": "client_credentials"
+  },
+  "dryRun": true
+}
