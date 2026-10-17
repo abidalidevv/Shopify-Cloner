@@ -1,0 +1,518 @@
+// Multi-tenant schema for the store clone / backup Shopify app.
+// Keep the Shopify app template's own `Session` model for App Bridge sessions
+// (or swap its storage adapter so tokens are encrypted). Everything below is ours.
+//
+// Raw-SQL migration notes (Prisma cannot express these):
+//   1. One active run per destination store:
+//      CREATE UNIQUE INDEX one_active_run_per_dest ON "CloneRun" ("destShopId")
+//      WHERE status IN ('PREFLIGHT','AWAITING_CONFIRM','QUEUED','RUNNING','PAUSED');
+//   2. Consider Postgres row-level security keyed on shop id for tenant isolation.
+//   3. pg-boss / Graphile Worker create and own their own queue tables.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────── Enums ─────────────────────────
+
+enum ShopStatus {
+  ACTIVE
+  UNINSTALLED
+  REDACTED
+}
+
+enum PairStatus {
+  PENDING_CLAIM     // source created a code, destination has not entered it yet
+  PENDING_APPROVAL  // destination claimed, source owner must approve
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum RunMode {
+  DIRECT   // source store -> destination store via a pair
+  RESTORE  // snapshot (cloud or uploaded ZIP) -> destination store
+}
+
+enum RunStatus {
+  PREFLIGHT
+  AWAITING_CONFIRM
+  QUEUED
+  RUNNING
+  PAUSED
+  COMPLETED
+  COMPLETED_WITH_WARNINGS
+  FAILED
+  CANCELLED
+}
+
+enum ConflictPolicy {
+  SKIP_EXISTING
+  OVERWRITE
+  CREATE_COPY
+}
+
+enum TaskStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  SKIPPED
+}
+
+enum ResourceType {
+  SYSTEM // stage 0 / stage 13 tasks, not a Shopify resource
+  LOCATION
+  MARKET
+  FILE
+  METAOBJECT_DEFINITION
+  METAFIELD_DEFINITION
+  METAOBJECT
+  PRODUCT
+  VARIANT
+  INVENTORY
+  PUBLICATION
+  COLLECTION
+  PAGE
+  BLOG
+  ARTICLE
+  MENU
+  REDIRECT
+  THEME
+  POLICY
+  CATALOG
+  PRICE_LIST
+  TRANSLATION
+  DISCOUNT
+  CUSTOMER
+  ORDER
+}
+
+enum MapStatus {
+  CREATED
+  UPDATED
+  SKIPPED_EXISTING
+}
+
+enum SnapshotKind {
+  MANUAL
+  SCHEDULED
+  CLONE_STAGING // transient copy used to make a direct clone resumable
+}
+
+enum SnapshotStatus {
+  BUILDING
+  READY
+  FAILED
+  EXPIRED
+  DELETED
+}
+
+enum EntitlementKind {
+  CLONE_PASS
+  AGENCY_SUBSCRIPTION
+}
+
+enum EntitlementStatus {
+  PENDING // charge created, merchant has not approved it yet
+  ACTIVE
+  CONSUMED
+  EXPIRED
+  CANCELLED
+  REFUNDED
+}
+
+enum CheckOutcome {
+  PASS
+  WARN
+  FAIL
+  SKIPPED
+}
+
+// ───────────────────────── Tenants ─────────────────────────
+
+model Shop {
+  id             String     @id @default(cuid())
+  domain         String     @unique // my-store.myshopify.com
+  shopGid        String     @unique // gid://shopify/Shop/123, stable origin key
+  name           String?
+  planName       String?
+  isShopifyPlus  Boolean    @default(false)
+  isDevStore     Boolean    @default(false)
+  currencyCode   String?
+  accessTokenEnc   Bytes      // envelope-encrypted offline access token (expires ~1h)
+  refreshTokenEnc  Bytes?     // expiring offline tokens: mandatory for new public apps since 2026-04-01
+  tokenExpiresAt   DateTime?
+  refreshExpiresAt DateTime?
+  tokenKeyId     String     // which KEK wrapped it
+  grantedScopes  String[]
+  status         ShopStatus @default(ACTIVE)
+  installedAt    DateTime   @default(now())
+  uninstalledAt  DateTime?
+  redactAfter    DateTime?  // set from the shop/redact webhook window
+
+  sourcePairs    StorePair[]    @relation("PairSource")
+  destPairs      StorePair[]    @relation("PairDest")
+  snapshots      Snapshot[]
+  runsAsDest     CloneRun[]     @relation("RunDest")
+  entitlements   Entitlement[]
+  mediaBlobs     MediaBlob[]
+  auditLogs      AuditLog[]
+  throttles      ShopThrottle[]
+  agencyTokens   AgencyToken[]
+  grantsGiven    AgencyGrant[]  @relation("GrantHub")
+  grantsReceived AgencyGrant[]  @relation("GrantDest")
+}
+
+// ───────────────────────── Pairing ─────────────────────────
+
+model StorePair {
+  id               String     @id @default(cuid())
+  sourceShopId     String
+  destShopId       String?    // null until the destination claims the code
+  status           PairStatus @default(PENDING_CLAIM)
+  codeHash         String?    @unique // hash of the pairing code, never the code itself
+  codeExpiresAt    DateTime?
+  failedClaims     Int        @default(0)
+  allowedResources ResourceType[]
+  claimedAt        DateTime?
+  approvedAt       DateTime?
+  approvedByUserId String?    // Shopify staff id from the source session token
+  revokedAt        DateTime?
+  createdAt        DateTime   @default(now())
+
+  sourceShop Shop        @relation("PairSource", fields: [sourceShopId], references: [id])
+  destShop   Shop?       @relation("PairDest", fields: [destShopId], references: [id])
+  runs       CloneRun[]
+
+  @@index([sourceShopId])
+  @@index([destShopId])
+}
+
+// ───────────────────────── Runs and tasks ─────────────────────────
+
+model CloneRun {
+  id                String         @id @default(cuid())
+  mode              RunMode
+  pairId            String?        // required for DIRECT
+  snapshotId        String?        // required for RESTORE
+  destShopId        String
+  status            RunStatus      @default(PREFLIGHT)
+  selectedResources ResourceType[]
+  conflictPolicy    ConflictPolicy @default(SKIP_EXISTING)
+  preflight         Json?          // plan limits, variant-cap risk, app-block scan
+  currentStage      Int            @default(0)
+  counts            Json?
+  entitlementId     String?
+  createdByUserId   String?
+  createdAt         DateTime       @default(now())
+  startedAt         DateTime?
+  finishedAt        DateTime?
+
+  pair      StorePair?          @relation(fields: [pairId], references: [id])
+  snapshot  Snapshot?           @relation(fields: [snapshotId], references: [id])
+  destShop  Shop                @relation("RunDest", fields: [destShopId], references: [id])
+  tasks     CloneTask[]
+  failures  ItemFailure[]
+  report    VerificationReport?
+  patches   DeferredPatch[]
+
+  @@index([destShopId, status])
+}
+
+model CloneTask {
+  id          String       @id @default(cuid())
+  runId       String
+  stage       Int          // DAG wave number, see the dependency graph
+  resourceType ResourceType
+  shardKey    String       // e.g. "PRODUCT:0007"
+  status      TaskStatus   @default(PENDING)
+  attempts    Int          @default(0)
+  maxAttempts Int          @default(5)
+  cursor      String?
+  inputKey    String?      // object-store key of the JSONL slice this task processes
+  itemsTotal  Int          @default(0)
+  itemsOk     Int          @default(0)
+  itemsFailed Int          @default(0)
+  lastError   String?
+  availableAt DateTime     @default(now())
+  leaseUntil  DateTime?    // a dead worker's lease simply expires
+  workerId    String?
+  startedAt   DateTime?
+  finishedAt  DateTime?
+
+  run CloneRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, resourceType, shardKey])
+  @@index([runId, stage, status])
+}
+
+model ItemFailure {
+  id           String       @id @default(cuid())
+  runId        String
+  resourceType ResourceType
+  sourceGid    String
+  destGid      String?
+  code         String
+  message      String
+  userErrors   Json?
+  retryable    Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+
+  run CloneRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, resourceType, sourceGid])
+  @@index([runId, resourceType])
+}
+
+// ───────────────────────── ID remapping ─────────────────────────
+// Keyed by the ORIGIN shop GID (not a pair id) so it works for both
+// direct clones and restores from a snapshot whose source store is gone.
+
+model IdMap {
+  id            String       @id @default(cuid())
+  originShopGid String
+  destShopId    String
+  resourceType  ResourceType
+  sourceGid     String
+  destGid       String
+  sourceHandle  String?
+  destHandle    String?
+  sourceUrl     String?      // files: used by the URL rewrite pass
+  destUrl       String?
+  checksum      String?      // hash of the source payload, enables skip-if-unchanged
+  status        MapStatus    @default(CREATED)
+  lastRunId     String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([originShopGid, destShopId, resourceType, sourceGid])
+  @@index([destShopId, resourceType, destGid])
+  @@index([destShopId, resourceType, sourceHandle])
+  @@index([destShopId, sourceUrl])
+}
+
+// ───────────────────────── Backups / snapshots ─────────────────────────
+
+model Snapshot {
+  id             String         @id @default(cuid())
+  shopId         String
+  kind           SnapshotKind
+  status         SnapshotStatus @default(BUILDING)
+  originShopGid  String
+  schemaVersion  Int
+  appVersion     String
+  apiVersion     String
+  includesPii    Boolean        @default(false)
+  includesMedia  Boolean        @default(false)
+  resourceCounts Json?
+  manifestKey    String?
+  objectPrefix   String
+  sizeBytes      BigInt         @default(0)
+  sha256         String?
+  signature      String?        // HMAC over the manifest, verified on any ZIP import
+  wrappedDek     Bytes?         // per-snapshot data key, wrapped by a KMS key
+  kmsKeyId       String?
+  createdAt      DateTime       @default(now())
+  expiresAt      DateTime?
+  deletedAt      DateTime?
+
+  shop    Shop             @relation(fields: [shopId], references: [id])
+  objects SnapshotObject[]
+  runs    CloneRun[]
+
+  @@index([shopId, createdAt])
+}
+
+model SnapshotObject {
+  id           String       @id @default(cuid())
+  snapshotId   String
+  resourceType ResourceType
+  r2Key        String
+  sha256       String
+  bytes        BigInt
+  itemCount    Int          @default(0)
+
+  snapshot Snapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@unique([snapshotId, r2Key])
+}
+
+// Content-addressed media, scoped per shop so dedupe never leaks across tenants.
+model MediaBlob {
+  shopId   String
+  sha256   String
+  r2Key    String
+  bytes    BigInt
+  mimeType String?
+  refCount Int     @default(1)
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@id([shopId, sha256])
+}
+
+// ───────────────────────── Billing ─────────────────────────
+
+model Entitlement {
+  id               String            @id @default(cuid())
+  shopId           String
+  kind             EntitlementKind
+  status           EntitlementStatus @default(ACTIVE)
+  maxProducts      Int?
+  shopifyChargeGid String?
+  consumedByRunId  String?           @unique
+  runId            String?           // the run this pass was bought for
+  sponsoredPairId  String?           // source store paid on behalf of this pair
+  confirmationUrl  String?
+  purchasedAt      DateTime          @default(now())
+  expiresAt        DateTime?
+
+  shop Shop @relation(fields: [shopId], references: [id])
+
+  @@index([shopId, status])
+  @@unique([shopId, runId])
+}
+
+// ───────────────────────── Verification report ─────────────────────────
+
+model VerificationReport {
+  id             String    @id @default(cuid())
+  runId          String    @unique
+  summary        Json
+  shareTokenHash String?   @unique // sharing is opt-in; the report contains store data
+  shareExpiresAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  run    CloneRun            @relation(fields: [runId], references: [id], onDelete: Cascade)
+  checks VerificationCheck[]
+}
+
+model VerificationCheck {
+  id         String       @id @default(cuid())
+  reportId   String
+  category   String       // "urls", "templates", "publications", "counts", "theme-blocks"
+  name       String
+  expected   String?
+  actual     String?
+  outcome    CheckOutcome
+  url        String?
+  httpStatus Int?
+
+  report VerificationReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId, outcome])
+}
+
+// ───────────────────────── Ops ─────────────────────────
+
+model WebhookEvent {
+  id          String    @id // X-Shopify-Webhook-Id, used for dedupe
+  topic       String
+  shopDomain  String
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  shopId      String?
+  actorUserId String?
+  action      String   // "pair.created", "pair.approved", "run.started", "snapshot.deleted"
+  meta        Json?
+  createdAt   DateTime @default(now())
+
+  shop Shop? @relation(fields: [shopId], references: [id])
+
+  @@index([shopId, createdAt])
+}
+
+// ───────────────────────── Rate limiting ─────────────────────────
+
+model ShopThrottle {
+  shopId      String
+  side        String   // "read" | "write"
+  available   Float
+  maxPoints   Float
+  restoreRate Float
+  updatedAt   DateTime @default(now())
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@id([shopId, side])
+}
+
+// ───────────────────────── Deferred reference patches (applied in stage 13) ─────────────────────────
+
+enum PatchStatus {
+  PENDING
+  DONE
+  FAILED
+}
+
+model DeferredPatch {
+  id             String       @id @default(cuid())
+  runId          String
+  ownerKind      ResourceType // PRODUCT or VARIANT
+  ownerSourceGid String
+  namespace      String
+  key            String
+  type           String
+  sourceValue    String
+  waitingOn      String[]
+  status         PatchStatus  @default(PENDING)
+  error          String?
+  createdAt      DateTime     @default(now())
+
+  run CloneRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, ownerSourceGid, namespace, key])
+  @@index([runId, status])
+}
+
+// ───────────────────────── Agency tier and free-tier ledger ─────────────────────────
+
+model AgencyToken {
+  id         String    @id @default(cuid())
+  hubShopId  String    // the paid store that holds the Agency subscription
+  label      String
+  tokenHash  String    @unique // HMAC of the token; the plaintext is shown once
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+
+  hubShop Shop @relation(fields: [hubShopId], references: [id], onDelete: Cascade)
+}
+
+model AgencyGrant {
+  id               String    @id @default(cuid())
+  hubShopId        String
+  destShopId       String
+  tokenId          String?
+  approvedByUserId String?   // destination staff who consented
+  grantedAt        DateTime  @default(now())
+  revokedAt        DateTime?
+
+  hubShop  Shop @relation("GrantHub", fields: [hubShopId], references: [id], onDelete: Cascade)
+  destShop Shop @relation("GrantDest", fields: [destShopId], references: [id], onDelete: Cascade)
+
+  @@unique([hubShopId, destShopId])
+}
+
+// Abuse ledger keyed by the ORIGIN shop GID so uninstall/reinstall cannot reset free runs.
+// Holds no customer data. Confirm it is covered by your privacy policy and shop/redact handling.
+model FreeUsage {
+  id            String   @id @default(cuid())
+  originShopGid String
+  destShopGid   String
+  runId         String   @unique
+  productCount  Int
+  createdAt     DateTime @default(now())
+
+  @@index([originShopGid])
+}
