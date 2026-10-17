@@ -69,7 +69,7 @@ export type RefResult =
   | { status: "unmapped"; kind: MapKind | "UNKNOWN"; typeName: string };
 
 /** `final` = last chance (Stage 13 patching): anything still unmapped is unmapped, never deferred again. */
-export function resolveGid(gid: string, idx: RemapIndex, final = false): RefResult {
+export function resolveGid(gid: string, idx: RemapIndex, final = false, extraDefer: readonly MapKind[] = []): RefResult {
   const m = GID_RE.exec(gid);
   if (!m) return { status: "unmapped", kind: "UNKNOWN", typeName: "" };
   const typeName = m[1];
@@ -78,7 +78,7 @@ export function resolveGid(gid: string, idx: RemapIndex, final = false): RefResu
   if (!k) return { status: "unmapped", kind: "UNKNOWN", typeName };
   const mapped = idx.gid(k, gid);
   if (mapped) return { status: "mapped", gid: mapped };
-  if (!final && DEFER_KINDS.has(k)) return { status: "deferred", kind: k };
+  if (!final && (DEFER_KINDS.has(k) || extraDefer.includes(k))) return { status: "deferred", kind: k };
   return { status: "unmapped", kind: k, typeName };
 }
 
@@ -410,7 +410,9 @@ export function rewriteHtml(html: string | null | undefined, idx: RemapIndex, c:
 
 /** URLs embedded in plain text (multi-line text metafields, JSON strings). Only touches source-store URLs. */
 export function rewriteUrlsInText(s: string, idx: RemapIndex, c: Collector): string {
-  return s.replace(/(?:https?:)?\/\/[^\s"'<>)\]]+/gi, (m) => rewriteUrl(m, idx, c));
+  // shopify:// must be matched FIRST: its "//" would otherwise be eaten as a protocol-relative URL and skipped.
+  // Theme {% schema %} blocks and settings carry these (shopify://shop_images/..., shopify://files/videos/...).
+  return s.replace(/shopify:\/\/[^\s"'<>)\]]+|(?:https?:)?\/\/[^\s"'<>)\]]+/gi, (m) => rewriteUrl(m, idx, c));
 }
 
 export function rewriteStringSmart(s: string, idx: RemapIndex, c: Collector): string {
@@ -479,7 +481,7 @@ const REF_BASE: Record<string, MapKind | "MIXED"> = {
   collection_reference: "COLLECTION", page_reference: "PAGE", metaobject_reference: "METAOBJECT", mixed_reference: "MIXED",
 };
 
-export function remapMetafield(mf: SrcMetafield, idx: RemapIndex, c: Collector, opts: { final?: boolean } = {}): MfOutcome {
+export function remapMetafield(mf: SrcMetafield, idx: RemapIndex, c: Collector, opts: { final?: boolean; extraDefer?: readonly MapKind[] } = {}): MfOutcome {
   const id = `${mf.namespace}.${mf.key}`;
   if (isReservedNamespace(mf.namespace)) return { kind: "dropped", code: "RESERVED_NAMESPACE", detail: id };
 
@@ -492,7 +494,7 @@ export function remapMetafield(mf: SrcMetafield, idx: RemapIndex, c: Collector, 
     try { gids = isList ? (JSON.parse(mf.value) as string[]) : [mf.value]; } catch { return { kind: "dropped", code: "BAD_REFERENCE_VALUE", detail: id }; }
     const out: string[] = [], waiting = new Set<MapKind>();
     for (const g of gids) {
-      const r = resolveGid(g, idx, opts.final);
+      const r = resolveGid(g, idx, opts.final, opts.extraDefer);
       if (r.status === "mapped") { out.push(r.gid); c.stats.gidsRewritten++; }
       else if (r.status === "passthrough") out.push(r.gid);
       else if (r.status === "deferred") waiting.add(r.kind);
