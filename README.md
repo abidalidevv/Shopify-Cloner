@@ -1,166 +1,145 @@
-# Shopify Cloner
+# Clonix — Zero-404 Shopify Store Cloner & Automated Vault 🚀
 
-High-fidelity Shopify store migration and cloning engine built with TypeScript and the Shopify Admin GraphQL & REST APIs. Designed to duplicate full store ecosystems—including catalog taxonomy, custom theme templates, inventory tracking, customers, and historical orders—with zero manual re-entry and zero data loss.
+[![CI / Tests](https://img.shields.io/badge/tests-112%20passing-008060.svg?style=flat-square)](https://github.com/abidalidevv/Shopify-Cloner)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg?style=flat-square)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.4-purple.svg?style=flat-square)](https://vitejs.dev/)
+[![Shopify API](https://img.shields.io/badge/Shopify%20Admin%20API-2025--01-green.svg?style=flat-square)](https://shopify.dev/docs/api/admin-graphql)
+[![Pricing](https://img.shields.io/badge/Pricing-%240%20%7C%20%249%20%7C%20%2449-D4FF00.svg?style=flat-square)](https://github.com/abidalidevv/Shopify-Cloner)
 
----
-
-## Overview
-
-Most conventional Shopify migration apps (like Matrixify or standard CSV exporters) only migrate raw catalog rows. This typically leaves stores broken on destination:
-- Custom theme template suffixes (`templateSuffix`) return **404 Not Found** because custom page and product JSON templates aren't compiled into the active theme.
-- Products default to untracked inventory (`tracked: false`) with missing warehouse allocations.
-- Standard Product Taxonomy categories and category-specific metafields are lost.
-- Historical customer records and orders require complex manual spreadsheet mapping.
-
-**Shopify Cloner** solves these edge cases with an automated multi-phase pipeline that syncs both store data and theme layouts in lockstep.
+**Clonix** is a high-fidelity Shopify store cloning and automated vault Micro-SaaS. Designed to duplicate full store ecosystems—including catalog taxonomy, custom theme templates (`templateSuffix`), inventory tracking, metaobjects, and offline backup vaults—with zero manual re-entry and zero broken URLs.
 
 ---
 
-## Key Features
+## ⚡ The Core Problem Clonix Solves
 
-- **Theme & Template Preservation (Zero 404s):** Synchronizes custom Liquid/JSON templates (`product.custom.json`, `page.custom.json`) directly into the destination theme via the Asset API.
-- **Taxonomy & Category Mapping:** Retains standard Shopify Taxonomy Category references (`gid://shopify/TaxonomyCategory/...`) and category metafield structures.
-- **Inventory & Warehouse Synchronization:** Automatically updates `inventoryItem` properties to enable tracking (`tracked: true`), configures physical weights, and assigns stock counts to matching locations.
-- **Customer & Order History:** Clones customer profiles and historical order records (with line items, shipping/billing addresses, and financial/fulfillment statuses) using idempotent REST order ingestion.
-- **Markets & Catalogs:** Auto-provisions market catalogs (e.g. regional pricing, assigned markets) via the Markets API.
-- **Review System Integration:** Generates validated, UTF-8 BOM-encoded review imports (compatible with Judge.me, Loox, and Shopify Reviews) with native metafield rating badges.
-- **Strict Write-Safety Rails:** Real writes are strictly guarded behind explicit flags (`--apply`) and typed destination domain confirmations. Dry-run preview is the default.
+Conventional Shopify migration apps (like standard CSV exporters or generic duplicators) fail on production themes:
+1. **Broken Custom Templates (404 Fallback):** Custom product/page JSON templates (e.g. `product.newmedda.json`, `product.newqabz.json`) are ignored. The destination falls back to generic layouts or 404s.
+2. **Leaked CDN Image References:** Images remain hotlinked to the old store's CDN (`cdn.shopify.com/.../ph0igg-jv/...`). When the old store closes, all product imagery breaks.
+3. **Broken Taxonomy & Metaobjects:** Standard category definitions and circular metaobject entries fail to stitch.
+4. **Untracked Inventory:** Imported variants default to `tracked: false` with zero warehouse allocation.
 
----
-
-## Architecture Pipeline
-
-```
-[ Source Store ] (Read-Only)
-       │
-       ▼  GraphQL Queries (Paginated & Rate-Limited)
-[ Local Cloner Engine ]
-   ├── Phase 1: Authentication & Token Exchange (Client Credentials / OAuth)
-   ├── Phase 2: Schema Validation (Verifies mutations against live Shopify API)
-   ├── Phase 3: Raw Lossless Backup (JSONL + Media Catalog)
-   ├── Phase 4: Reference Scanner & ID Remapping (Translates old GIDs to new GIDs)
-   └── Phase 5: Theme Asset Compiler (Pushes custom template definitions)
-       │
-       ▼  Idempotent Writes (GraphQL & REST Admin APIs)
-[ Destination Store ] (Live & Verified)
-```
+**Clonix** resolves all four using a **14-Stage Directed Acyclic Graph (DAG)** execution engine with barrier synchronization.
 
 ---
 
-## Supported Resource Types
+## 📦 Architecture Overview
 
-| Resource | Migration Method | Scope & Coverage |
-|---|---|---|
-| **Products & Variants** | GraphQL `productCreate` + `productVariantsBulkUpdate` | Titles, descriptions, vendors, tags, options, compare-at prices, weights, SKUs |
-| **Product Taxonomy** | GraphQL `productUpdate` | Standard Category GIDs (`gid://shopify/TaxonomyCategory/...`) |
-| **Inventory Levels** | GraphQL `inventoryItemUpdate` + `inventorySetQuantities` | `tracked: true`, on-hand / available counts per location |
-| **Collections** | GraphQL `collectionCreate` | Manual and automated (smart rule) collections |
-| **Themes & Templates** | GraphQL / REST Asset API | Layouts, section presets, `templateSuffix` mappings |
-| **Pages & Menus** | GraphQL `pageCreate` + `menuCreate` | Full page HTML, multi-level nested navigation items |
-| **Customers** | GraphQL `customerCreate` | Names, emails, phone numbers, addresses, customer notes |
-| **Orders** | REST `POST /orders.json` (Bypass mode) | Historical orders, line items, timestamps, financial statuses |
-| **Markets & Catalogs** | GraphQL `catalogCreate` | Market catalogs linked to primary or international markets |
-| **Files & Media** | GraphQL `fileCreate` | Media images, banner graphics, CDN asset persistence |
-| **URL Redirects** | GraphQL `urlRedirectCreate` | 301 legacy path redirects |
-
----
-
-## Prerequisites
-
-- **Node.js** >= 20.0.0
-- **npm** >= 10.0.0
-- Shopify Custom App credentials (or Partner App OAuth credentials) for both Source and Destination stores with relevant Admin API scopes.
-
----
-
-## Quick Start
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/abidalidevv/Shopify-Cloner.git
-cd Shopify-Cloner
 ```
-
-### 2. Install dependencies
-```bash
-npm install
-```
-
-### 3. Configure environment
-Copy the example environment file and configure your store domains and credentials:
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-```env
-# Source Store (Read-Only)
-SOURCE_SHOP=your-source-store.myshopify.com
-SOURCE_CLIENT_ID=your_source_client_id
-SOURCE_CLIENT_SECRET=your_source_client_secret
-
-# Destination Store
-DEST_SHOP=your-destination-store.myshopify.com
-DEST_CLIENT_ID=your_dest_client_id
-DEST_CLIENT_SECRET=your_dest_client_secret
-
-# Global Settings
-SHOPIFY_API_VERSION=2026-10
-DRY_RUN=true
-```
-
-### 4. Build TypeScript
-```bash
-npm run build
+┌────────────────────────────────┐            ┌────────────────────────────────┐
+│   Source Store (Origin Vault)  │            │  Destination Store (Target)   │
+│   e.g. ph0igg-jv.myshopify.com │            │  e.g. clone.myshopify.com      │
+└───────────────┬────────────────┘            └───────────────▲────────────────┘
+                │                                             │
+                │ Read-Only Scopes                            │ Idempotent Write Mutations
+                ▼                                             │
+  ┌───────────────────────────────────────────────────────────┴────────────────┐
+  │                         CLONIX SAAS ENGINE (DAG Barrier)                   │
+  │                                                                            │
+  │  Stage 0: Preflight Probe (Currencies, Locales, Markets)                   │
+  │  Stage 1: Primary Location & Warehouse Mapping                             │
+  │  Stage 2: Staged Upload Media Ingestion (Zero-Leak Destination CDN)        │
+  │  Stage 3: Metafield Definitions & Metaobject Schema Sync                   │
+  │  Stage 4: Metaobject Entries (Pass 2 Circular Stitching)                   │
+  │  Stage 5: Products & Variants (Urdu UTF-8, Compare-At, SKUs)               │
+  │  Stage 6: Inventory Level Tracking (Tracked: True, Multi-location)         │
+  │  Stage 7: Smart & Automated Collections (Rules & Sort Orders)              │
+  │  Stage 8: Pages & Legal Policies (Terms, Privacy, Refund)                  │
+  │  Stage 9: Menus & Navigation Hierarchy (Multi-level handles)               │
+  │  Stage 10: Pricing Structures & Multi-Currency Catalogs                    │
+  │  Stage 11: Theme & Liquid Schemas ({% schema %} Asset Remap)               │
+  │  Stage 12: URL Redirects & Legacy Route Preservation                       │
+  │  Stage 13: Live Storefront Verification (Zero-404 Crawler)                 │
+  └────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## CLI Usage
+## 💳 Commercial Monetization Model
 
-### Backup Source Data
-Extract all store resources into local JSON snapshots:
-```bash
-npm run backup
+Clonix offers a merchant-friendly freemium-to-paid pricing architecture:
+
+| Tier | Price | Model | Entitlements & Features |
+| :--- | :--- | :--- | :--- |
+| **Freemium Audit** | **$0** | Free Forever | Store Parity & Health Audit, up to 12 products & 1 collection, active theme Liquid copy, flags broken template suffixes. |
+| **Single Clone Pass** | **$9** | One-Time Pass | 1-time full store cloning, unlimited products & collections, zero-leak CDN remapping, custom template preservation. **Charged exclusively to Destination Store ($0 for Source)**. |
+| **Unlimited Pro** | **$49 / mo** | Recurring Monthly | Unlimited store duplications every month, automated daily vault backups, master agency pairing token (zero repeated consent friction), white-label PDF audit reports. |
+
+---
+
+## 🔑 2-Sided Consent Handshake (Crockford Base32)
+
+To securely bridge two independent Shopify stores without exposing permanent API keys:
+1. **Source Merchant** generates an 8-character Crockford Base32 token (e.g. `7K9M-2PX4`) with a strict **15-minute Time-To-Live (TTL)**.
+2. The raw token is displayed once and hashed in storage using **HMAC-SHA256**.
+3. **Destination Merchant** claims the token inside their Clonix app.
+4. **Source Merchant** confirms authorization in their dashboard.
+5. Migration begins. Self-pairing (`source == dest`) is strictly blocked.
+
+---
+
+## ⚠️ Real-World Bottlenecks & Mitigation Strategies
+
+When running store migrations on Shopify at scale, the following technical bottlenecks exist and are mitigated by Clonix:
+
+| Bottleneck | Shopify Limitation | Clonix Engine Mitigation |
+| :--- | :--- | :--- |
+| **GraphQL Rate Limits (Bucket Throttling)** | Standard apps receive **50 points/sec** (burst 1000). Complex mutations (e.g. `productCreate`) cost 10–25 points. | Implements a **token-bucket rate limiter with jittered exponential backoff** (retrying on HTTP 429 and `THROTTLED` errors). |
+| **Staged Upload Image Ingestion** | Uploading 500+ large media files sequentially takes 10+ minutes. | Uses **concurrency-limited chunking (concurrency = 4)** to upload files in parallel without overwhelming Node network sockets or triggering Shopify CDN timeouts. |
+| **Circular Metaobject References** | An author references an article which references the author; single-pass creation fails with `MISSING_REFERENCE`. | Solved via **Two-Pass Execution**: Pass 1 creates shell entries with dummy pointers; Pass 2 patches genuine foreign keys once all GIDs exist. |
+| **Memory Leaks on Massive Backups** | Ingesting 20,000 products into memory causes Node.js OOM heap crashes. | Streams all records as **JSONL (newline-delimited JSON)** to local disk. Only references and ID mapping dictionaries (`oldGid -> newGid`) stay in memory. |
+| **Liquid Asset API Rate Limits** | `asset.json` updates are capped at 2 req/sec. | Batches Liquid files and only uploads modified custom template suffixes (`*.json`, `*.liquid`) rather than redundant default theme assets. |
+
+---
+
+## 🛠️ Project Structure
+
 ```
-
-### Validate API Schema
-Check compatibility between your source backup and the destination store's live GraphQL schema:
-```bash
-npm run validate-schema
-```
-
-### Run Migration in Dry-Run Mode (Safe)
-Preview operations without making any changes to the destination store:
-```bash
-npm run migrate -- --module=all
-```
-
-### Apply Migration to Live Destination
-To execute real writes, pass `--apply` and explicitly verify the destination shop domain:
-```bash
-npm run migrate -- --module=all --apply --confirm-dest=your-destination-store.myshopify.com
-```
-
-### Migrate Specific Modules
-You can run migrations for individual modules independently:
-```bash
-npm run migrate -- --module=products --apply --confirm-dest=your-destination-store.myshopify.com
-npm run migrate -- --module=collections --apply --confirm-dest=your-destination-store.myshopify.com
-npm run migrate -- --module=pages --apply --confirm-dest=your-destination-store.myshopify.com
-npm run migrate -- --module=inventory --apply --confirm-dest=your-destination-store.myshopify.com
+├── clonix-app/               # React 18 + Vite Frontend Application
+│   ├── src/
+│   │   ├── components/       # Header, RoleSelector, OrbitalSyncCanvas, PairingWorkspace, DAGTracker
+│   │   ├── hooks/            # usePairingSession, useMigrationProgress
+│   │   └── types/            # TypeScript interfaces
+│   └── package.json
+├── clonix-preview/           # Standalone zero-dependency HTML/CSS prototype
+│   └── index.html
+├── clonix-landing/           # High-converting Clonify-style SaaS Landing Page
+│   └── index.html
+├── tibbeshifa-migrator/      # Core Backend Engine & CLI
+│   ├── src/                  # Shopify API clients, DAG runners, backup/restore logic
+│   ├── saas/                 # Clonix Micro-SaaS Server & REST API
+│   │   ├── api.ts            # Pairing, DAG progress, parity scorecard handlers
+│   │   ├── server.ts         # Production HTTP server (port 3000)
+│   │   ├── constants.ts      # Tier limits ($0 / $9 / $49)
+│   │   └── __tests__/        # Vitest suite
+│   └── package.json
+└── CLONIX_DESIGN_SYSTEM.md   # Design tokens & typography guide
 ```
 
 ---
 
-## Safety & Security
+## 🧪 Running Tests & Local Server
 
-- **Strict Read-Only Source Policy:** The engine will never execute mutations against the source store domain.
-- **Idempotent Operations:** Records are mapped via natural keys (handles, emails, SKUs). Rerunning a migration will not create duplicate products or collections.
-- **Credential Protection:** Secrets and environment files are strictly excluded via `.gitignore` and are never logged or persisted in state checkpoints.
+### 1. Run Complete Test Suite
+```bash
+cd tibbeshifa-migrator
+npm test
+```
+*Executes all 16 test files (112 unit & integration tests) covering auth, rate-limiting, DAG execution, pairing tokens, and HTTP server endpoints.*
+
+### 2. Start the Production Clonix SaaS Server
+```bash
+cd tibbeshifa-migrator
+npx tsx saas/server.ts
+```
+*Launches HTTP server on `http://localhost:3000` exposing REST endpoints and serving the frontend application.*
+
+### 3. Run Frontend Development Server
+```bash
+cd clonix-app
+npm run dev
+```
 
 ---
 
-## License
-
-MIT License. Free for personal, commercial, and agency use.
+## 📄 License
+Private & Proprietary. Built for high-volume Shopify merchants and agencies.
