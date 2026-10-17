@@ -9,7 +9,7 @@
 //   - Every executor is idempotent, so a duplicate or replayed job is harmless.
 
 import PgBoss from "pg-boss";
-import crypto from "node:crypto";
+import * as crypto from "node:crypto";
 import { Prisma, PrismaClient, ResourceType as RT } from "@prisma/client";
 import type { CloneRun, CloneTask } from "@prisma/client";
 

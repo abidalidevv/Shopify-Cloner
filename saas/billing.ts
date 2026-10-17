@@ -10,13 +10,13 @@
 //   - Development stores are not charged real money, and trial-store collection may be deferred. Treat the
 //     destination's plan as part of the decision (see `shop.isDevStore`, set from shop.plan.partnerDevelopment).
 
-import crypto from "node:crypto";
+import * as crypto from "node:crypto";
 import { prisma } from "./scheduler";
 
-export const FREE_PRODUCT_LIMIT = 25;
+export const FREE_PRODUCT_LIMIT = 12;
 export const FREE_RUNS_PER_ORIGIN = 3;               // abuse cap: lifetime free runs per SOURCE shop
-export const PASS_PRICE_USD = 29;
-export const AGENCY_PRICE_USD = 79;
+export const PASS_PRICE_USD = 9;
+export const AGENCY_PRICE_USD = 49;
 export const AGENCY_MAX_PRODUCTS_PER_RUN = 20_000;   // "unlimited" is a marketing word. Enforce fair use.
 export const AGENCY_MAX_RUNS_PER_MONTH = 100;
 
