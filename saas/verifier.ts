@@ -19,7 +19,7 @@ export interface Check {
   expected?: string; actual?: string; url?: string; httpStatus?: number;
 }
 export interface ExpectedPage { kind: "PRODUCT" | "COLLECTION" | "PAGE" | "ARTICLE"; sourceGid: string; destGid?: string; path: string }
-export interface PatchRow { id: string; ownerKind: "PRODUCT" | "VARIANT"; ownerSourceGid: string; namespace: string; key: string; type: string; sourceValue: string }
+export interface PatchRow { id: string; ownerKind: "PRODUCT" | "VARIANT" | "METAOBJECT"; ownerSourceGid: string; namespace: string; key: string; type: string; sourceValue: string }
 export interface FailureRow { resourceType: string; sourceGid: string; code: string; message: string; userErrors: unknown }
 export interface TemplateUse { kind: "product" | "collection" | "page" | "article" | "blog"; suffix: string; count: number }
 
@@ -124,6 +124,9 @@ export async function runVerification(ctx: VerifyCtx): Promise<ReportSummary> {
 const MF_SET = `mutation($m: [MetafieldsSetInput!]!) {
   metafieldsSet(metafields: $m) { metafields { id } userErrors { field message code elementIndex } } }`;
 
+const MO_UPDATE = `mutation($id: ID!, $metaobject: MetaobjectUpdateInput!) {
+  metaobjectUpdate(id: $id, metaobject: $metaobject) { metaobject { id } userErrors { field message code } } }`;
+
 async function applyDeferredPatches(ctx: VerifyCtx, add: (c: Check) => void): Promise<void> {
   let done = 0, failed = 0;
   for await (const batch of ctx.db.patches()) {
@@ -134,6 +137,12 @@ async function applyDeferredPatches(ctx: VerifyCtx, add: (c: Check) => void): Pr
         if (!owner) { await ctx.db.settlePatch(p.id, "FAILED", "owner was not cloned"); failed++; continue; }
         const r = remapMetafield({ namespace: p.namespace, key: p.key, type: p.type, value: p.sourceValue }, ctx.idx, newCollector(), { final: true });
         if (r.kind !== "set") { await ctx.db.settlePatch(p.id, "FAILED", r.kind === "dropped" ? r.code : "still unresolved"); failed++; continue; }
+        if (p.ownerKind === "METAOBJECT") {                              // metaobject fields are patched with metaobjectUpdate, not metafieldsSet
+          const d = await ctx.dest.gql(MO_UPDATE, { id: owner, metaobject: { fields: [{ key: p.key, value: r.mf.value }] } });
+          const ue = (d.metaobjectUpdate.userErrors ?? [])[0] as { message: string } | undefined;
+          if (ue) { await ctx.db.settlePatch(p.id, "FAILED", ue.message); failed++; } else { await ctx.db.settlePatch(p.id, "DONE"); done++; }
+          continue;
+        }
         send.push({ p, input: { ownerId: owner, namespace: r.mf.namespace, key: r.mf.key, type: r.mf.type, value: r.mf.value } });
       }
       if (!send.length) continue;

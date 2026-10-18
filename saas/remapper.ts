@@ -560,7 +560,7 @@ export interface ProductSetInput {
 }
 
 export interface DeferredRef {
-  ownerKind: "PRODUCT" | "VARIANT"; ownerSourceGid: string;
+  ownerKind: "PRODUCT" | "VARIANT" | "METAOBJECT"; ownerSourceGid: string;
   namespace: string; key: string; type: string; sourceValue: string; waitingOn: MapKind[];
 }
 

@@ -4,7 +4,7 @@
 // Rule 1: the shop is ALWAYS derived from the verified session token, never from request params.
 // Rule 2: two-sided consent. Source approves READING, destination confirms WRITING.
 
-import crypto from "node:crypto";
+import * as crypto from "node:crypto";
 import { prisma, startRun, boss, Q } from "./scheduler";
 import { authenticate } from "../shopify.server";   // from the Shopify app template
 
@@ -50,6 +50,13 @@ const MAX_CLAIM_FAILURES = 5;                                 // per destination
 // 1. Source: generate a code.
 export async function createPair(request: Request) {
   const { shop: source, userId } = await requireShop(request);
+
+  // Invalidate any earlier pending codes for this source shop so only one code is valid at a time
+  await prisma.storePair.updateMany({
+    where: { sourceShopId: source.id, status: "PENDING_CLAIM" },
+    data: { status: "REVOKED" },
+  });
+
   const code = makeCode();
   const pair = await prisma.storePair.create({
     data: { sourceShopId: source.id, status: "PENDING_CLAIM", codeHash: hashCode(code), codeExpiresAt: new Date(Date.now() + CODE_TTL_MS) },
@@ -68,7 +75,7 @@ export async function claimPair(request: Request, code: string) {
   });
   if (recentFails >= MAX_CLAIM_FAILURES) throw new Response("too many attempts", { status: 429 });
 
-  const normalized = code.trim().toUpperCase().replace(/[^0-9A-Z]/g, "");
+  const normalized = code.trim().toUpperCase().replace(/[OIL]/g, (ch) => (ch === "O" ? "0" : "1")).replace(/[^0-9A-Z]/g, "");   // Crockford: O->0, I/L->1
   const result = await prisma.storePair.updateMany({
     where: {
       codeHash: hashCode(normalized), status: "PENDING_CLAIM", codeExpiresAt: { gt: new Date() },

@@ -11,13 +11,13 @@
 // No Prisma, no pg-boss, no global fetch in here: persistence is ctx.db, HTTP is ctx.http, time is ctx.sleep.
 // That is what makes every executor unit-testable with fakes.
 
-import * as crypto from "node:crypto";
-import { Defer } from "./errors.js";
+import crypto from "node:crypto";
+import { Defer } from "./errors";
 import {
   RemapError, newCollector, rewriteHtml, rewriteUrl, rewriteJsonDeep, rewriteUrlsInText,
   remapMetafield, resolveGid, toProductSetInput, mapDestVariants,
-} from "./remapper.js";
-import type { Collector, DeferredRef, RemapCtx, SrcMetafield, SrcProduct, Warning } from "./remapper.js";
+} from "./remapper";
+import type { Collector, DeferredRef, RemapCtx, SrcMetafield, SrcProduct, Warning } from "./remapper";
 
 /* ───────────────────────── Contract types ───────────────────────── */
 
@@ -219,18 +219,21 @@ export const metaobjectExecutor: ItemExecutor = async (ctx, src: SrcMetaobject, 
   };
   if (taxonomy && process.env.ALLOW_TAXONOMY_UPSERT === "false") return warnOnly("TAXONOMY_UPSERT_DISABLED", `${src.type}/${src.handle}`);
 
-  const final = ctx.pass === "B";
+  const pass2 = ctx.pass === "B";
+  const late: DeferredRef[] = [];                                       // references to products/collections/pages: they do not exist until stages 5-8
   const r = await mappedUpsert(ctx, {
     type: "METAOBJECT", src, existing,
     build: () => {
+      late.length = 0;
       const c = newCollector(), fields: { key: string; value: string }[] = [];
       for (const f of src.fields) {
         if (f.value === null || f.value === "") continue;
         const o = remapMetafield({ namespace: "mo", key: f.key, type: f.type, value: f.value }, ctx.remap.idx, c,
-          final ? { final: true } : { extraDefer: ["METAOBJECT"] });
+          pass2 ? {} : { extraDefer: ["METAOBJECT"] });                  // pass B: metaobject targets must exist by now, so unmapped = dropped
         if (o.kind === "set") fields.push({ key: f.key, value: o.mf.value });
         else if (o.kind === "dropped") c.warnings.push({ code: o.code, detail: `${src.type}.${f.key}: ${o.detail}` });
-        // deferred (pass A): omitted now, filled in pass B
+        else if (pass2) late.push({ ownerKind: "METAOBJECT", ownerSourceGid: src.id, namespace: "mo", key: f.key, type: f.type, sourceValue: f.value, waitingOn: o.waitingOn });
+        // deferred in pass A: omitted now (metaobject refs are filled in pass B, late-kind refs are patched in stage 13)
       }
       return { payload: { handle: { type: src.type, handle: src.handle }, metaobject: { fields } }, c };
     },
@@ -243,6 +246,9 @@ export const metaobjectExecutor: ItemExecutor = async (ctx, src: SrcMetaobject, 
   if (r.kind === "failed" && taxonomy && /reserved|not authorized|access denied/i.test(r.message)) {
     return warnOnly("TAXONOMY_UPSERT_REJECTED", `${src.type}/${src.handle}: ${r.message}`);
   }
+  // Saved even when the item was skipped by checksum: pass A and pass B payloads are identical for entries whose only
+  // pending references are late kinds, so the skip path must not lose them. saveDeferred is an idempotent upsert.
+  if (pass2 && late.length && r.kind !== "failed") await ctx.db.saveDeferred(late);
   return r;
 };
 
