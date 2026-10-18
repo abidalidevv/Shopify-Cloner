@@ -8,7 +8,7 @@
 //   - The barrier is a COUNT over CloneTask, taken under a row lock on CloneRun.
 //   - Every executor is idempotent, so a duplicate or replayed job is harmless.
 
-import { PgBoss } from "pg-boss";
+import PgBoss from "pg-boss";
 import * as crypto from "node:crypto";
 import { Prisma, ResourceType as RT } from "@prisma/client";
 import type { CloneRun, CloneTask } from "@prisma/client";

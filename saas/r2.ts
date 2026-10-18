@@ -6,15 +6,17 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createInterface } from "node:readline";
 import type { Readable } from "node:stream";
 
-const accountId = process.env.R2_ACCOUNT_ID || "mock-account";
-const accessKey = process.env.R2_ACCESS_KEY_ID || "mock-key";
-const secretKey = process.env.R2_SECRET_ACCESS_KEY || "mock-secret";
-const Bucket = process.env.R2_BUCKET || "clonix-vault";
+const endpoint = process.env.AWS_ENDPOINT_URL_S3 || (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : undefined);
+const accessKey = process.env.AWS_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID || "mock-key";
+const secretKey = process.env.AWS_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY || "mock-secret";
+const region = process.env.AWS_REGION || "us-east-2";
+const Bucket = process.env.S3_BUCKET_NAME || process.env.R2_BUCKET || "assets";
 
 const s3 = new S3Client({
-  region: "auto",
-  endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+  region,
+  endpoint,
   credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
+  forcePathStyle: true,
 });
 
 export interface R2 {
