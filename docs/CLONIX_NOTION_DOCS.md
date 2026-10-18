@@ -206,7 +206,8 @@ cd tibbeshifa-migrator
 npm test
 ```
 
-### Verified Test Suites (16 Files, 112 Tests Passing 100%):
+### Verified Test Suites (17 Files, 115 Tests Passing 100%):
+- ✅ `saas/__tests__/scheduler-executors.test.ts` (Stage 0 Extractor, 9-stage executor registry, remap index)
 - ✅ `saas/__tests__/clonix.test.ts` (Pairing tokens, HMAC security, DAG progress, pricing tiers, HTTP server)
 - ✅ `src/__tests__/client.test.ts` (GraphQL client, retry mechanics, query cost budgeting)
 - ✅ `src/__tests__/inventory.test.ts` (Inventory levels, locations, multi-warehouse sync)
