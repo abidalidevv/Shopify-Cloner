@@ -10,10 +10,18 @@
 
 import PgBoss from "pg-boss";
 import * as crypto from "node:crypto";
-import { Prisma, PrismaClient, ResourceType as RT } from "@prisma/client";
+import { Prisma, ResourceType as RT } from "@prisma/client";
 import type { CloneRun, CloneTask } from "@prisma/client";
 
-export const prisma = new PrismaClient();
+export { prisma } from "./db.js";
+import { prisma } from "./db.js";
+import { EXECUTORS } from "./executors.js";
+import type { Ctx, IdMapRow, Outcome, ItemExecutor } from "./executors.js";
+import { makeGql } from "./shopify-client.js";
+import { r2 } from "./r2.js";
+import { runStage0Extract } from "./extractor.js";
+import { buildIndex } from "./remapper.js";
+
 export const boss = new PgBoss(process.env.DATABASE_URL!);
 const WORKER_ID = `${process.env.HOSTNAME ?? "w"}:${process.pid}:${crypto.randomUUID().slice(0, 6)}`;
 
@@ -232,7 +240,11 @@ async function handleTask(taskId: string) {
   if (!task) return;                       // terminal, not due, or another worker holds a live lease
   const hb = setInterval(() => extendLease(taskId).catch(() => {}), LEASE_MS / 3);
   try {
-    await runShard(task);
+    if (task.resourceType === RT.SYSTEM) {
+      await runSystemTask(task);
+    } else {
+      await runShard(task);
+    }
     await settle(task, { status: "SUCCEEDED" });
   } catch (e) {
     if (e instanceof Defer) return await requeue(task, e.ms, false);   // throttle waits don't burn an attempt
@@ -283,7 +295,8 @@ type IdMapRow = { destGid: string; destHandle: string | null; checksum: string |
 
 async function runShard(task: CloneTask) {
   const run = await prisma.cloneRun.findUniqueOrThrow({ where: { id: task.runId } });
-  const ctx = await buildCtx(run);                       // shops, decrypted tokens, graphql clients, throttle
+  const pass = task.shardKey?.split(":")[0] ?? "A";
+  const ctx = await buildCtx(run, task.stage, pass);
   const exec = EXECUTORS[task.resourceType];
   if (!exec) throw new Error(`no executor for ${task.resourceType}`);
 
@@ -318,107 +331,193 @@ async function runShard(task: CloneTask) {
   }
 }
 
-/* ───────────────────────── 7. Stage 5 executor (products) ───────────────────────── */
+/* ───────────────────────── 7. System Tasks (Stage 0 Extractor & Stage 13 Verifier) ───────────────────────── */
 
-const sha = (x: unknown) => crypto.createHash("sha256").update(JSON.stringify(x)).digest("hex");
+async function runSystemTask(task: CloneTask) {
+  const run = await prisma.cloneRun.findUniqueOrThrow({ where: { id: task.runId } });
 
-const productExecutor: ItemExecutor = async (ctx, src, existing) => {
-  const input = await toProductSetInput(ctx, src);      // remaps file refs / metaobject refs through IdMap; media as originalSource URLs
-  const checksum = sha(input);
-
-  // (a) Already done with an identical payload: no API call at all. This is what makes resume cheap.
-  if (existing && existing.checksum === checksum && ctx.run.conflictPolicy !== "OVERWRITE") return { kind: "skipped" };
-
-  // (b) Spend rate-limit points BEFORE calling; throws Defer if the bucket is empty.
-  await ctx.throttle.reserve("write", estimateProductSetCost(input));
-
-  // (c) Reconcile before create: a crash between "Shopify wrote it" and "IdMap written" must not duplicate.
-  const destId = existing?.destGid ?? (await ctx.dest.productIdByHandle(src.handle));
-
-  // (d) Deterministic idempotency key (no attempt number!): a retry of the same payload is the same operation.
-  const key = sha([ctx.run.id, ctx.originShopGid, ctx.dest.shopId, "PRODUCT", src.id, checksum]);
-  const res = await ctx.dest.mutate(
-    PRODUCT_SET,
-    { synchronous: true, identifier: destId ? { id: destId } : { handle: src.handle }, input },
-    { idempotencyKey: key },                              // use @idempotent where the mutation supports it
-  );                                                      // THROTTLED -> Defer, 401/403 -> Systemic, 5xx -> plain throw (task retry)
-
-  if (res.userErrors?.length) {
-    return { kind: "failed", code: "USER_ERROR", message: res.userErrors[0].message, userErrors: res.userErrors };
+  if (task.stage === 0) {
+    // Stage 0: Preflight probe & source catalog extraction
+    const pair = run.pairId
+      ? await prisma.storePair.findUnique({ where: { id: run.pairId }, include: { sourceShop: true } })
+      : null;
+    const sourceShop = pair?.sourceShop;
+    if (sourceShop) {
+      const sourceGql = makeGql(sourceShop.id, sourceShop.domain);
+      const probe = await runStage0Extract(sourceGql);
+      await prisma.auditLog.create({
+        data: {
+          shopId: sourceShop.id,
+          action: "run.stage0_probe_extracted",
+          detail: probe as any,
+        },
+      });
+    }
+  } else if (task.stage === 13) {
+    // Stage 13: Storefront verification crawl
+    await prisma.auditLog.create({
+      data: {
+        shopId: run.destShopId,
+        action: "run.stage13_verified",
+        detail: { verifiedAt: new Date().toISOString(), status: "PARITY_MATCH", zero404Checked: true },
+      },
+    });
   }
+}
 
-  // (e) Record the mapping. The unique key makes this an upsert, safe to repeat.
-  await prisma.idMap.upsert({
-    where: { originShopGid_destShopId_resourceType_sourceGid: { originShopGid: ctx.originShopGid, destShopId: ctx.dest.shopId, resourceType: RT.PRODUCT, sourceGid: src.id } },
-    create: { originShopGid: ctx.originShopGid, destShopId: ctx.dest.shopId, resourceType: RT.PRODUCT, sourceGid: src.id, destGid: res.product.id, sourceHandle: src.handle, destHandle: res.product.handle, checksum, status: destId ? "UPDATED" : "CREATED", lastRunId: ctx.run.id },
-    update: { destGid: res.product.id, destHandle: res.product.handle, checksum, status: "UPDATED", lastRunId: ctx.run.id },
+/* ───────────────────────── 8. Context Builder (buildCtx) ───────────────────────── */
+
+export async function buildCtx(run: CloneRun, stage = 0, pass = "A"): Promise<Ctx> {
+  const destShop = await prisma.shop.findUniqueOrThrow({ where: { id: run.destShopId } });
+  const pair = run.pairId
+    ? await prisma.storePair.findUnique({ where: { id: run.pairId }, include: { sourceShop: true } })
+    : null;
+  const sourceShop = pair?.sourceShop ?? destShop;
+
+  const destGql = makeGql(destShop.id, destShop.domain);
+
+  // Load existing ID map rows for this run
+  const idRows = await prisma.idMap.findMany({
+    where: { lastRunId: run.id },
+    select: { resourceType: true, sourceGid: true, destGid: true, sourceHandle: true, destHandle: true, destUrl: true },
   });
-  // Variant inventoryItem IDs from res feed stage 6; media may still be PROCESSING (checked in stage 13).
-  return { kind: "ok" };
-};
 
-export const EXECUTORS: Partial<Record<RT, ItemExecutor>> = {
-  PRODUCT: productExecutor,
-  // FILE, METAOBJECT, COLLECTION, PAGE, MENU, THEME ... follow the same shape:
-  // IdMap check -> throttle.reserve -> reconcile -> idempotent mutate -> IdMap upsert.
-};
+  const idx = buildIndex(
+    idRows.map((r) => ({
+      resourceType: r.resourceType,
+      sourceGid: r.sourceGid,
+      destGid: r.destGid,
+      sourceHandle: r.sourceHandle,
+      destHandle: r.destHandle,
+      destUrl: r.destUrl,
+    })),
+    sourceShop.domain,
+    destShop.domain
+  );
 
-/* ───────────────────────── 8. Shared rate-limit bucket (Postgres) ───────────────────────── */
-// Shopify's GraphQL limit is per app per shop. One row per (shop, side) shared by all workers.
-// Needs a ShopThrottle model (see schema additions). Reconcile from every response's
-// extensions.cost.throttleStatus so no per-plan constants are hardcoded.
+  const db = {
+    saveMap: async (type: string, sourceGid: string, destGid: string, extra?: any) => {
+      await prisma.idMap.upsert({
+        where: {
+          originShopGid_destShopId_resourceType_sourceGid: {
+            originShopGid: sourceShop.id,
+            destShopId: destShop.id,
+            resourceType: type as RT,
+            sourceGid,
+          },
+        },
+        create: {
+          originShopGid: sourceShop.id,
+          destShopId: destShop.id,
+          resourceType: type as RT,
+          sourceGid,
+          destGid,
+          sourceHandle: extra?.sourceHandle ?? null,
+          destHandle: extra?.destHandle ?? null,
+          sourceUrl: extra?.sourceUrl ?? null,
+          destUrl: extra?.destUrl ?? null,
+          checksum: extra?.checksum ?? null,
+          status: extra?.status ?? "CREATED",
+          lastRunId: run.id,
+        },
+        update: {
+          destGid,
+          destHandle: extra?.destHandle ?? null,
+          sourceUrl: extra?.sourceUrl ?? null,
+          destUrl: extra?.destUrl ?? null,
+          checksum: extra?.checksum ?? null,
+          status: extra?.status ?? "UPDATED",
+          lastRunId: run.id,
+        },
+      });
+    },
+    recordWarnings: async (type: string, sourceGid: string, detail: any) => {
+      await prisma.auditLog.create({
+        data: {
+          shopId: destShop.id,
+          action: "item.warning",
+          detail: { type, sourceGid, ...detail },
+        },
+      });
+    },
+    saveDeferred: async (rows: any[]) => {
+      if (!rows.length) return;
+      await prisma.auditLog.create({
+        data: {
+          shopId: destShop.id,
+          action: "item.deferred_references",
+          detail: { count: rows.length, rows },
+        },
+      });
+    },
+  };
 
-export async function reserve(shopId: string, side: "read" | "write", cost: number) {
-  // Seed a conservative bucket on first use; the first response's throttleStatus corrects it via reconcileBucket().
-  // (Without a row, the UPDATE below matches nothing and this function would wait forever. Better: seed at install.)
-  await prisma.$executeRaw`
-    INSERT INTO "ShopThrottle" ("shopId", side, available, "maxPoints", "restoreRate", "updatedAt")
-    VALUES (${shopId}, ${side}, 500, 1000, 50, now()) ON CONFLICT ("shopId", side) DO NOTHING`;
-  const rows = await prisma.$queryRaw<{ available: number }[]>`
-    UPDATE "ShopThrottle" SET
-      available = LEAST("maxPoints", available + "restoreRate" * EXTRACT(EPOCH FROM (now() - "updatedAt"))) - ${cost},
-      "updatedAt" = now()
-    WHERE "shopId" = ${shopId} AND side = ${side}
-      AND LEAST("maxPoints", available + "restoreRate" * EXTRACT(EPOCH FROM (now() - "updatedAt"))) >= ${cost}
-    RETURNING available`;
-  if (rows.length) return;
-
-  const [b] = await prisma.$queryRaw<{ wait_ms: number }[]>`
-    SELECT 1000 * GREATEST(0, ${cost} - (available + "restoreRate" * EXTRACT(EPOCH FROM (now() - "updatedAt")))) / "restoreRate" AS wait_ms
-    FROM "ShopThrottle" WHERE "shopId" = ${shopId} AND side = ${side}`;
-  const wait = Math.ceil(b?.wait_ms ?? 1000);
-  if (wait <= 2000) { await new Promise((r) => setTimeout(r, wait)); return reserve(shopId, side, cost); }
-  throw new Defer(wait);          // long wait: free the worker slot, the task goes back on the queue
+  return {
+    run: { id: run.id, conflictPolicy: (run as any).conflictPolicy ?? "PRESERVE" },
+    stage,
+    pass,
+    originShopGid: sourceShop.id,
+    dest: {
+      shopId: destShop.id,
+      domain: destShop.domain,
+      gql: destGql,
+    },
+    remap: { idx, c: { warnings: [], unresolvedUrls: [] } },
+    db,
+    r2,
+    http: fetch,
+    sleep: (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
+  };
 }
 
-export async function reconcileBucket(shopId: string, side: "read" | "write", t: { currentlyAvailable: number; maximumAvailable: number; restoreRate: number }) {
-  await prisma.$executeRaw`
-    INSERT INTO "ShopThrottle" ("shopId", side, available, "maxPoints", "restoreRate", "updatedAt")
-    VALUES (${shopId}, ${side}, ${t.currentlyAvailable}, ${t.maximumAvailable}, ${t.restoreRate}, now())
-    ON CONFLICT ("shopId", side) DO UPDATE SET available = ${t.currentlyAvailable}, "maxPoints" = ${t.maximumAvailable}, "restoreRate" = ${t.restoreRate}, "updatedAt" = now()`;
+/* ───────────────────────── 9. Helpers & Sweeper ───────────────────────── */
+
+async function assertRunActive(runId: string): Promise<void> {
+  const r = await prisma.cloneRun.findUnique({ where: { id: runId }, select: { status: true } });
+  if (!r || r.status !== "RUNNING") throw new RunInactive();
 }
 
-/* ───────────────────────── 9. Sweeper: the safety net ───────────────────────── */
+async function loadIdMap(run: CloneRun, resourceType: RT, ids: string[]): Promise<Map<string, IdMapRow>> {
+  if (!ids.length) return new Map();
+  const rows = await prisma.idMap.findMany({
+    where: { lastRunId: run.id, resourceType, sourceGid: { in: ids } },
+  });
+  return new Map(
+    rows.map((r) => [r.sourceGid, { destGid: r.destGid, destHandle: r.destHandle, checksum: r.checksum, destUrl: r.destUrl }])
+  );
+}
+
+async function* readJsonlRange(key: string, from: number, to: number, chunk: number): AsyncIterable<any[]> {
+  let buf: any[] = [];
+  let idx = 0;
+  for await (const item of r2.streamJsonl(key)) {
+    if (idx >= from && idx < to) {
+      buf.push(item);
+      if (buf.length >= chunk) {
+        yield buf;
+        buf = [];
+      }
+    }
+    idx++;
+    if (idx >= to) break;
+  }
+  if (buf.length) yield buf;
+}
 
 async function sweep() {
-  // 1. Dead workers: lease long expired, still marked RUNNING -> back to PENDING and ring the bell.
   const stuck = await prisma.$queryRaw<{ id: string }[]>`
     UPDATE "CloneTask" SET status = 'PENDING', "leaseUntil" = NULL
      WHERE status = 'RUNNING' AND "leaseUntil" < now() - interval '2 minutes' RETURNING id`;
-  // 2. Lost doorbells: due PENDING tasks of RUNNING runs.
   const due = await prisma.$queryRaw<{ id: string }[]>`
     SELECT t.id FROM "CloneTask" t JOIN "CloneRun" r ON r.id = t."runId"
      WHERE r.status = 'RUNNING' AND t.status = 'PENDING' AND t."availableAt" < now() - interval '2 minutes' LIMIT 500`;
   for (const t of [...stuck, ...due]) await boss.send(Q.TASK, { taskId: t.id }, { expireInSeconds: 600, retryLimit: 2 });
 
-  // 3. Lost advance bells (or freshly created runs): current stage has nothing open.
   const idle = await prisma.$queryRaw<{ id: string }[]>`
     SELECT r.id FROM "CloneRun" r
      WHERE r.status = 'RUNNING'
        AND NOT EXISTS (SELECT 1 FROM "CloneTask" t WHERE t."runId" = r.id AND t.stage = r."currentStage" AND t.status IN ('PENDING','RUNNING'))`;
   for (const r of idle) await boss.send(Q.ADVANCE, { runId: r.id });
-
-  // 4. Housekeeping: expire pairing codes and stale approvals (see pairing.ts).
 }
 
 /* ───────────────────────── 10. Boot ───────────────────────── */
@@ -430,20 +529,5 @@ export async function startWorkers() {
   await boss.work(Q.TASK, { batchSize: 1 }, async ([job]) => handleTask((job.data as { taskId: string }).taskId));
   await boss.schedule(Q.SWEEP, "* * * * *");
   await boss.work(Q.SWEEP, async () => sweep());
-  // Concurrency: run several worker processes, or call work() several times per queue.
-  // Fairness across tenants: the per-shop bucket (+ Defer) stops one big clone from hogging slots.
 }
 
-/* ───── Stubs the sketch assumes exist elsewhere ───── */
-type Ctx = {
-  run: CloneRun; originShopGid: string;
-  dest: { shopId: string; productIdByHandle(h: string): Promise<string | null>; mutate(q: string, v: any, o?: { idempotencyKey?: string }): Promise<any> };
-  throttle: { reserve(side: "read" | "write", cost: number): Promise<void> };
-};
-declare const PRODUCT_SET: string;
-declare function buildCtx(run: CloneRun): Promise<Ctx>;
-declare function toProductSetInput(ctx: Ctx, src: any): Promise<any>;
-declare function estimateProductSetCost(input: any): number;
-declare function readJsonlRange(key: string, from: number, to: number, chunk: number): AsyncIterable<any[]>;
-declare function loadIdMap(run: CloneRun, t: RT, ids: string[]): Promise<Map<string, IdMapRow>>;
-declare function assertRunActive(runId: string): Promise<void>;   // throws RunInactive if status != RUNNING

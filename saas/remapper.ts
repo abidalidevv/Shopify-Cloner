@@ -185,6 +185,22 @@ export class RemapIndex {
   }
 }
 
+export function buildIndex(
+  rows: Iterable<IdRow>,
+  sourceHost: string,
+  destHost: string,
+  originShopGid = "gid://shopify/Shop/1"
+): RemapIndex {
+  return new RemapIndex(
+    {
+      originShopGid,
+      sourceHosts: [sourceHost],
+      destHosts: [destHost],
+    },
+    rows
+  );
+}
+
 /* ───────────────────────── 4. URL rewriting ───────────────────────── */
 
 const PLACEHOLDER = "https://placeholder.invalid";

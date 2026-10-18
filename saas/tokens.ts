@@ -7,8 +7,8 @@
 // (getAccessToken), never cache it for a whole run. Many workers may need a refresh at the same instant, and
 // because refresh tokens rotate, a second concurrent refresh with the old token FAILS. Hence the row lock.
 
-import { prisma } from "./scheduler";
-import { encrypt, decrypt } from "./crypto";   // envelope-encryption helpers, not shown
+import { prisma } from "./db.js";
+import { encrypt, decrypt } from "./crypto.js";
 
 const MARGIN_MS = 5 * 60_000;                  // refresh when less than 5 minutes remain, not at 0
 
