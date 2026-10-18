@@ -94,16 +94,24 @@ export async function claimPair(request: Request, code: string) {
   await audit(dest.id, userId, "pair.claimed", {});
 }
 
+const VALID_RESOURCE_TYPES = new Set([
+  "LOCATION", "PUBLICATION", "MARKET", "FILE", "METAOBJECT_DEFINITION",
+  "METAFIELD_DEFINITION", "METAOBJECT", "PRODUCT", "INVENTORY",
+  "COLLECTION", "PAGE", "BLOG", "ARTICLE", "MENU", "CATALOG",
+  "PRICE_LIST", "TRANSLATION", "THEME", "REDIRECT", "POLICY"
+]);
+
 // 3. Source: explicit approval. This is the consent to READ and send data.
 //    The UI must show the destination's name, domain, plan, and exactly what will be copied.
 export async function approvePair(request: Request, pairId: string, allowed: string[]) {
   const { shop: source, userId } = await requireShop(request /*, { owner: includesPii } */);
+  const sanitizedAllowed = allowed.filter((r) => VALID_RESOURCE_TYPES.has(r));
   const r = await prisma.storePair.updateMany({
     where: { id: pairId, sourceShopId: source.id, status: "PENDING_APPROVAL", codeExpiresAt: { gt: new Date() } },
-    data: { status: "ACTIVE", approvedAt: new Date(), approvedByUserId: userId, allowedResources: allowed as any },
+    data: { status: "ACTIVE", approvedAt: new Date(), approvedByUserId: userId, allowedResources: sanitizedAllowed as any },
   });
   if (r.count !== 1) throw new Response("cannot approve", { status: 409 });
-  await audit(source.id, userId, "pair.approved", { pairId, allowed });
+  await audit(source.id, userId, "pair.approved", { pairId, allowed: sanitizedAllowed });
 }
 
 // 4. Destination: create the run. Preflight is read-only and runs before any pass is consumed.
@@ -113,8 +121,8 @@ export async function createRun(request: Request, pairId: string) {
     const pair = await tx.storePair.findFirst({ where: { id: pairId, destShopId: dest.id, status: "ACTIVE" } });
     if (!pair) throw new Response("pair not active", { status: 409 });
 
-    // Optional active entitlement (if merchant pre-purchased), but do not consume until confirmation
-    const ent = await tx.entitlement.findFirst({ where: { shopId: dest.id, status: "ACTIVE" } });
+    // Optional active entitlement (if merchant pre-purchased), but only CLONE_PASS — never consume agency subscription
+    const ent = await tx.entitlement.findFirst({ where: { shopId: dest.id, kind: "CLONE_PASS", status: "ACTIVE" } });
 
     // The partial unique index (one active run per destination) rejects a second concurrent run.
     const run = await tx.cloneRun.create({

@@ -57,9 +57,8 @@ export const STAGES: StageDef[] = [
 
 /* ───────────────────────── 2. Small helpers ───────────────────────── */
 
-class Defer extends Error { constructor(public ms: number) { super(`defer ${ms}ms`); } }   // throttled: come back later
-class Systemic extends Error {}                                                             // auth revoked, scope missing, shop gone
-class RunInactive extends Error {}                                                          // run paused or cancelled
+import { Defer, Systemic, RunInactive, RemapError } from "./errors.js";
+import { AuthLapsed } from "./tokens.js";
 
 // Lets pg-boss.send() run inside a Prisma transaction, so task rows and their doorbell jobs commit atomically.
 const txDb = (tx: Prisma.TransactionClient) => ({
@@ -152,11 +151,14 @@ async function advanceOnce(runId: string): Promise<Step> {
       where: { runId, stage: def.stage },
       _sum: { itemsTotal: true, itemsFailed: true },
     });
+    const failedTasks = await tx.cloneTask.count({
+      where: { runId, stage: def.stage, status: "FAILED" },
+    });
     const systemic = await tx.cloneTask.count({
       where: { runId, stage: def.stage, status: "FAILED", lastError: { startsWith: "SYSTEMIC:" } },
     });
     const ratio = (agg._sum.itemsFailed ?? 0) / Math.max(1, agg._sum.itemsTotal ?? 0);
-    if (systemic > 0 || ratio > FAIL_RATIO_PAUSE) {
+    if (systemic > 0 || failedTasks > 0 || ratio > FAIL_RATIO_PAUSE) {
       await tx.cloneRun.update({ where: { id: runId }, data: { status: "PAUSED" } });
       return "paused";
     }
@@ -233,6 +235,7 @@ async function claim(taskId: string): Promise<CloneTask | null> {
        AND status IN ('PENDING', 'RUNNING')
        AND "availableAt" <= now()
        AND ("leaseUntil" IS NULL OR "leaseUntil" < now())
+       AND attempts < "maxAttempts"
     RETURNING *`;
   return rows[0] ?? null;
 }
@@ -250,8 +253,8 @@ async function handleTask(taskId: string) {
     await settle(task, { status: "SUCCEEDED" });
   } catch (e) {
     if (e instanceof Defer) return await requeue(task, e.ms, false);   // throttle waits don't burn an attempt
-    if (e instanceof RunInactive) return await requeue(task, 30_000, false);
-    const systemic = e instanceof Systemic || String(e).startsWith("Error: SYSTEMIC:");
+    if (e instanceof RunInactive) return;                              // run paused/cancelled: exit quietly
+    const systemic = e instanceof Systemic || e instanceof AuthLapsed || String(e).startsWith("Error: SYSTEMIC:");
     if (systemic || task.attempts >= task.maxAttempts) {
       await settle(task, { status: "FAILED", lastError: `${systemic ? "SYSTEMIC:" : ""}${String(e).slice(0, 500)}` });
     } else {

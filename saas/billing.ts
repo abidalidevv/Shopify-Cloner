@@ -167,7 +167,10 @@ export async function consumeCoverage(runId: string, destShopId: string, c: Cove
 /** "You only pay for a clone that works": give the pass back if the run died before real progress. */
 export async function releasePassIfFailedEarly(runId: string, itemsDone: number, itemsTotal: number) {
   if (itemsTotal > 0 && itemsDone / itemsTotal >= 0.1) return;
-  await prisma.entitlement.updateMany({ where: { consumedByRunId: runId }, data: { status: "ACTIVE", consumedByRunId: null } });
+  await prisma.entitlement.updateMany({
+    where: { consumedByRunId: runId },
+    data: { status: "ACTIVE", consumedByRunId: null, runId: null },
+  });
 }
 
 /* ───────────────────────── 4. Agency tier ───────────────────────── */
@@ -176,6 +179,15 @@ export async function releasePassIfFailedEarly(runId: string, itemsDone: number,
 
 export async function startAgencySubscription(shopId: string, gql: Gql, appUrl: string): Promise<string> {
   const shop = await prisma.shop.findUniqueOrThrow({ where: { id: shopId } });
+
+  // Reuse existing pending subscription approval URL if generated recently
+  const existing = await prisma.entitlement.findFirst({
+    where: { shopId, kind: "AGENCY_SUBSCRIPTION", status: "PENDING" },
+  });
+  if (existing?.confirmationUrl && Date.now() - existing.purchasedAt.getTime() < 24 * 3_600_000) {
+    return existing.confirmationUrl;
+  }
+
   const r = await gql(
     `mutation($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $url: URL!, $test: Boolean) {
        appSubscriptionCreate(name: $name, lineItems: $lineItems, returnUrl: $url, test: $test) {
@@ -189,7 +201,15 @@ export async function startAgencySubscription(shopId: string, gql: Gql, appUrl: 
   );
   const out = r.data.appSubscriptionCreate;
   if (out.userErrors?.length) throw new Error(`billing: ${out.userErrors[0].message}`);
-  await prisma.entitlement.create({ data: { shopId, kind: "AGENCY_SUBSCRIPTION", status: "PENDING", shopifyChargeGid: out.appSubscription.id } });
+  await prisma.entitlement.create({
+    data: {
+      shopId,
+      kind: "AGENCY_SUBSCRIPTION",
+      status: "PENDING",
+      shopifyChargeGid: out.appSubscription.id,
+      confirmationUrl: out.confirmationUrl,
+    },
+  });
   return out.confirmationUrl;
 }
 
@@ -199,6 +219,13 @@ export async function onSubscriptionUpdate(payload: { app_subscription: { admin_
   await prisma.entitlement.updateMany({
     where: { shopifyChargeGid: p.admin_graphql_api_id, kind: "AGENCY_SUBSCRIPTION" },
     data: { status: p.status === "ACTIVE" ? "ACTIVE" : p.status === "PENDING" ? "PENDING" : "CANCELLED" },
+  });
+}
+
+export async function revokeAgencyGrant(hubShopId: string, destShopId: string) {
+  await prisma.agencyGrant.updateMany({
+    where: { hubShopId, destShopId, revokedAt: null },
+    data: { revokedAt: new Date() },
   });
 }
 
