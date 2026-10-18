@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clonix Help Center &amp; Documentation — Zero-404 Store Cloner</title>
+  
+  <!-- Typography: Inter, Geist, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-page: #ffffff;
+      --bg-sidebar: #fbfbfb;
+      --bg-subtle: #f4f5f7;
+      --bg-card: #ffffff;
+      
+      --border-color: #eaecef;
+      --border-darker: #d0d7de;
+      
+      --fg-primary: #111827;
+      --fg-secondary: #4b5563;
+      --fg-muted: #6b7280;
+      
+      --brand-red: #ea580c;
+      --brand-green: #008060;
+      --brand-green-subdued: #ecfdf5;
+      --brand-green-border: #a7f3d0;
+      --brand-lime: #d4ff00;
+      
+      --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    [data-theme="dark"] {
+      --bg-page: #0d1117;
+      --bg-sidebar: #090d12;
+      --bg-subtle: #161b22;
+      --bg-card: #161b22;
+      
+      --border-color: #30363d;
+      --border-darker: #484f58;
+      
+      --fg-primary: #f0f6fc;
+      --fg-secondary: #c9d1d9;
+      --fg-muted: #8b949e;
+      
+      --brand-green-subdued: rgba(0, 128, 96, 0.15);
+      --brand-green-border: rgba(0, 128, 96, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-page);
+      color: var(--fg-primary);
+      font-size: 14.5px;
+      line-height: 1.6;
+      display: flex;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Sticky Search Header for GitBook Layout */
+    .top-search-bar {
+      position: fixed;
+      top: 0;
+      left: 280px;
+      right: 0;
+      height: 64px;
+      background: var(--bg-page);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+
+    .search-box-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      width: 440px;
+      transition: all 0.2s ease;
+    }
+    .search-box-wrap:focus-within {
+      border-color: var(--brand-red);
+      background: var(--bg-card);
+      box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.15);
+    }
+
+    .search-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      font-size: 13.5px;
+      color: var(--fg-primary);
+      width: 100%;
+      font-family: inherit;
+    }
+
+    .search-kbd {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--fg-muted);
+      flex-shrink: 0;
+    }
+
+    /* LEFT SIDEBAR (GITBOOK STYLE) */
+    .sidebar-left {
+      width: 280px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 20;
+      overflow-y: auto;
+    }
+
+    .sidebar-brand {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--brand-red);
+      color: #ffffff;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+    }
+
+    .brand-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--fg-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .nav-sections {
+      padding: 20px 16px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      flex: 1;
+    }
+
+    .nav-group-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--fg-muted);
+      margin-bottom: 8px;
+      padding-left: 8px;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nav-item-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      text-align: left;
+      padding: 7px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--fg-secondary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+    .nav-item-btn:hover {
+      background: var(--bg-subtle);
+      color: var(--fg-primary);
+    }
+    .nav-item-btn.active {
+      color: var(--brand-red);
+      background: rgba(234, 88, 12, 0.08);
+      font-weight: 600;
+    }
+
+    .sidebar-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border-color);
+      font-size: 12px;
+      color: var(--fg-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-sidebar);
+    }
+
+    /* MAIN DOCUMENTATION VIEWPORT */
+    .content-layout {
+      margin-left: 280px;
+      margin-top: 64px;
+      display: flex;
+      flex: 1;
+      width: calc(100% - 280px);
+    }
+
+    .main-doc-body {
+      flex: 1;
+      max-width: 820px;
+      padding: 48px 48px 120px;
+      margin: 0 auto;
+    }
+
+    .breadcrumbs {
+      font-size: 13px;
+      color: var(--fg-muted);
+      margin-bottom: 12px;
+    }
+
+    .doc-h1 {
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--fg-primary);
+      margin-bottom: 12px;
+      line-height: 1.25;
+    }
+
+    .doc-lead {
+      font-size: 16px;
+      color: var(--fg-secondary);
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+
+    .doc-h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--fg-primary);
+      margin: 36px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .doc-h3 {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--fg-primary);
+      margin: 24px 0 10px;
+    }
+
+    p {
+      margin-bottom: 16px;
+      color: var(--fg-secondary);
+    }
+
+    ul, ol {
+      margin-bottom: 20px;
+      padding-left: 24px;
+      color: var(--fg-secondary);
+    }
+    li {
+      margin-bottom: 8px;
+    }
+
+    /* Note Box (GitBook Style) */
+    .doc-note {
+      background: var(--brand-green-subdued);
+      border: 1px solid var(--brand-green-border);
+      border-radius: var(--radius-sm);
+      padding: 16px 18px;
+      margin: 24px 0;
+      display: flex;
+      gap: 12px;
+      font-size: 13.5px;
+      color: var(--fg-primary);
+    }
+    .doc-note-icon {
+      color: var(--brand-green);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .doc-callout-grey {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 16px 18px;
+      margin: 20px 0;
+      font-size: 13.5px;
+      color: var(--fg-secondary);
+    }
+
+    /* Video Embed Card */
+    .doc-video-card {
+      background: #000000;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin: 24px 0;
+      position: relative;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .doc-video-thumb {
+      width: 100%;
+      height: 380px;
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #000000 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+    }
+    .doc-video-play-btn {
+      width: 64px;
+      height: 64px;
+      background: #ea580c;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 4px 18px rgba(234, 88, 12, 0.4);
+      transition: transform 0.2s ease;
+    }
+    .doc-video-play-btn:hover {
+      transform: scale(1.08);
+    }
+
+    /* Code Blocks */
+    pre, code {
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    code {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--fg-primary);
+    }
+    pre {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      overflow-x: auto;
+      margin: 20px 0;
+    }
+
+    /* Comparison Table (Competitor Buster) */
+    .doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+      font-size: 13.5px;
+    }
+    .doc-table th, .doc-table td {
+      padding: 12px 14px;
+      border: 1px solid var(--border-color);
+      text-align: left;
+    }
+    .doc-table th {
+      background: var(--bg-subtle);
+      font-weight: 700;
+      color: var(--fg-primary);
+    }
+
+    /* RIGHT SIDEBAR ("ON THIS PAGE") */
+    .sidebar-right {
+      width: 240px;
+      padding: 48px 24px;
+      position: sticky;
+      top: 64px;
+      height: calc(100vh - 64px);
+      flex-shrink: 0;
+    }
+
+    .toc-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--fg-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-left: 0;
+    }
+
+    .toc-link {
+      font-size: 13px;
+      color: var(--fg-secondary);
+      text-decoration: none;
+      transition: color 0.15s ease;
+      display: block;
+      border-left: 2px solid transparent;
+      padding-left: 8px;
+    }
+    .toc-link:hover, .toc-link.active {
+      color: var(--brand-red);
+      border-color: var(--brand-red);
+      font-weight: 600;
+    }
+
+    .helpful-box {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+    .helpful-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg-secondary);
+      margin-bottom: 10px;
+    }
+    .helpful-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .helpful-btn {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 15px;
+      transition: all 0.15s ease;
+    }
+    .helpful-btn:hover {
+      background: var(--bg-card);
+      border-color: var(--border-darker);
+    }
+
+    /* Theme Switcher Bottom Floating Button */
+    .theme-toggle-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--fg-secondary);
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LEFT SIDEBAR NAVIGATION -->
+  <aside class="sidebar-left">
+    <div class="sidebar-brand">
+      <div class="brand-icon">C</div>
+      <div class="brand-name">Clonix Support</div>
+    </div>
+
+    <div class="nav-sections">
+      
+      <!-- Section 1 -->
+      <div>
+        <div class="nav-group-title">Welcome to Clonix</div>
+        <ul class="nav-list">
+          <li><button class="nav-item-btn active" onclick="loadDoc('overview')">Clonix Help Center</button></li>
+          <li><button class="nav-item-btn" onclick="loadDoc('benefits')">Key Benefits of Clonix</button></li>
+          <li><button class="nav-item-btn" onclick="loadDoc('changelog')">Changelog &amp; v1.2</button></li>
+        </ul>
+      </div>
+
+      <!-- Section 2 -->
+      <div>
+        <div class="nav-group-title">Getting Started</div>
+        <ul class="nav-list">
+          <li><button class="nav-item-btn" onclick="loadDoc('installing')">Installing Clonix</button></li>
+          <li><button class="nav-item-btn" onclick="loadDoc('pricing')">Pricing &amp; Plans ($0 / $9 / $49)</button></li>
+          <li><button class="nav-item-btn" onclick="loadDoc('handshake')">Direct Store Pairing</button></li>
+        </ul>
+      </div>
+
+      <!-- Section 3 -->
+      <div>
+        <div class="nav-group-title">Using Clonix</div>
+        <ul class="nav-list">
+          <li><button class="nav-item-btn" onclick="loadDoc('connecting')">Connecting Stores (Key)</button></li>
+          <li><button class="nav-item-btn" onclick="loadDoc('exporting')">Data You Can Clone</button></li>
+          <li><button class="nav-item-btn" onclick="loadDoc('zero404')">Zero-404 Link Rewriter</button></li>
+          <li><button class="nav-item-btn" onclick="loadDoc('scheduler')">14-Stage DAG Pipeline</button></li>
+          <li><button class="nav-item-btn" onclick="loadDoc('tracking')">Live Progress Monitoring</button></li>
+        </ul>
+      </div>
+
+      <!-- Section 4 -->
+      <div>
+        <div class="nav-group-title">Backups &amp; Vault</div>
+        <ul class="nav-list">
+          <li><button class="nav-item-btn" onclick="loadDoc('backups')">Clonix Vault Protection</button></li>
+          <li><button class="nav-item-btn" onclick="loadDoc('create-backup')">Creating Encrypted ZIP</button></li>
+          <li><button class="nav-item-btn" onclick="loadDoc('restore')">Restoring from Vault</button></li>
+        </ul>
+      </div>
+
+      <!-- Section 5 -->
+      <div>
+        <div class="nav-group-title">Account &amp; Billing</div>
+        <ul class="nav-list">
+          <li><button class="nav-item-btn" onclick="loadDoc('billing')">Billing &amp; Free Retry</button></li>
+          <li><button class="nav-item-btn" onclick="loadDoc('agency')">Agency Hub Subscription</button></li>
+        </ul>
+      </div>
+
+      <!-- Section 6 -->
+      <div>
+        <div class="nav-group-title">FAQs and Support</div>
+        <ul class="nav-list">
+          <li><button class="nav-item-btn" onclick="loadDoc('faqs')">FAQs vs Matrixify / Duplify</button></li>
+          <li><button class="nav-item-btn" onclick="loadDoc('contact')">Contact Support</button></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="sidebar-footer">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+      <span>Powered by Clonix Engine</span>
+    </div>
+  </aside>
+
+  <!-- TOP SEARCH BAR -->
+  <header class="top-search-bar">
+    <div class="search-box-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#9ca3af"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="text" class="search-input" id="search-box" placeholder="Ask or search..." onkeyup="filterDocs()">
+      <span class="search-kbd">Ctrl K</span>
+    </div>
+
+    <div style="font-size: 13px; font-weight: 600; color: var(--fg-secondary);">
+      Zero-404 Knowledge Base
+    </div>
+  </header>
+
+  <!-- MAIN DOCUMENTATION LAYOUT -->
+  <div class="content-layout">
+    
+    <!-- MAIN ARTICLE BODY (DYNAMICALLY POPULATED) -->
+    <main class="main-doc-body" id="doc-render-target">
+      
+      <div class="breadcrumbs">Welcome to Clonix &gt; Clonix Help Center</div>
+      
+      <h1 class="doc-h1">Data you can clone</h1>
+      <p class="doc-lead">
+        Learn how Clonix duplicates your entire Shopify store catalog, themes, and settings with Zero-404 link rewriting and zero spreadsheet dependency.
+      </p>
+
+      <h2 class="doc-h2" id="entities">What you can clone:</h2>
+      <ul>
+        <li><strong>Products and Collections:</strong> All titles, HTML descriptions, tags, options, variant pricing, barcode/SKUs, and collection rules.</li>
+        <li><strong>Metafields and Metaobjects:</strong> Custom schema definitions and entries (with topo-sorted bi-directional references).</li>
+        <li><strong>Navigation and Redirects:</strong> Multi-level nested menus and 301 URL redirects.</li>
+        <li><strong>Published Themes &amp; Assets:</strong> Complete liquid code, sections, theme settings, and CDN asset images.</li>
+        <li><strong>Pages, Blogs, and Articles:</strong> Rich formatted content with automatic internal link remapping.</li>
+        <li><strong>Files &amp; Media:</strong> Direct streaming via Cloudflare R2 vaults with zero file-size corruption.</li>
+      </ul>
+
+      <div class="doc-note">
+        <div class="doc-note-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        </div>
+        <div>
+          <strong>Zero Spreadsheet Guarantee:</strong> Unlike Matrixify where you must manage confusing Excel formulas and <code>MERGE/REPLACE</code> command columns, Clonix operates via a direct 1-click cryptographic handshake.
+        </div>
+      </div>
+
+      <h2 class="doc-h2" id="how-it-works">How it works</h2>
+      <p>
+        Clonix operates on a <strong>14-Stage Directed Acyclic Graph (DAG) Scheduler</strong> powered by <code>pg-boss</code> and PostgreSQL. When you connect two stores via their unique 8-character pairing keys:
+      </p>
+
+      <ol>
+        <li><strong>Stage 0 (Preflight Probe):</strong> Reads the source store catalog in read-only mode to extract products, custom liquid templates (e.g. <code>newmedda</code>, <code>newqabz</code>), and generates an audit report.</li>
+        <li><strong>Zero-Leak R2 Staging:</strong> Streams bulk GraphQL JSONL data directly to encrypted Cloudflare R2 buckets, bypassing memory limits and eliminating Duplify's 3,000 product trap.</li>
+        <li><strong>Atomic Stage Barrier:</strong> Advances through stages (Locations, Files, Definitions, Products, Menus, Theme, and Redirects) with automatic retry backoff.</li>
+        <li><strong>Stage 13 (Zero-404 Storefront Verifier):</strong> Crawls the destination store to verify that all image links and product handles resolve with HTTP 200 and zero 404s.</li>
+      </ol>
+
+      <!-- Video Card (Duplify Style) -->
+      <div class="doc-video-card">
+        <div class="doc-video-thumb" onclick="alert('Opening Clonix 1-Minute Walkthrough Video...')">
+          <div class="doc-video-play-btn">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </div>
+          <div style="color:#ffffff; font-weight:700; font-size:16px; margin-top:14px;">Clonix 1-Minute Overview Video</div>
+          <div style="color:#9ca3af; font-size:12px;">Watch how simple it is to duplicate stores without spreadsheets</div>
+        </div>
+      </div>
+
+      <h2 class="doc-h2" id="pricing-summary">One-Time Transfer vs Subscriptions</h2>
+      <p>
+        Most competitors force you into expensive recurring monthly subscriptions ($79/month on Duplify or $200/month on Matrixify). Clonix is built with simple, honest pricing:
+      </p>
+
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Plan</th>
+            <th>Price</th>
+            <th>Product Limit</th>
+            <th>Ideal For</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Free Sandbox</strong></td>
+            <td>$0</td>
+            <td>12 Products</td>
+            <td>Testing real store cloning before paying</td>
+          </tr>
+          <tr>
+            <td><strong>Clone Pass</strong></td>
+            <td>$9 one-time</td>
+            <td>Unlimited (50,000+)</td>
+            <td>Single store migrations &amp; store duplication</td>
+          </tr>
+          <tr>
+            <td><strong>Agency Hub</strong></td>
+            <td>$49 / month</td>
+            <td>Unlimited per store</td>
+            <td>Agencies duplicating into client stores</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </main>
+
+    <!-- RIGHT "ON THIS PAGE" TABLE OF CONTENTS (GITBOOK STYLE) -->
+    <aside class="sidebar-right">
+      <div class="toc-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
+        On this page
+      </div>
+      <ul class="toc-list" id="toc-container">
+        <li><a href="#entities" class="toc-link active">What you can clone</a></li>
+        <li><a href="#how-it-works" class="toc-link">How it works</a></li>
+        <li><a href="#pricing-summary" class="toc-link">One-Time vs Subscriptions</a></li>
+      </ul>
+
+      <div class="helpful-box">
+        <div class="helpful-title">Was this helpful?</div>
+        <div class="helpful-buttons">
+          <button class="helpful-btn" onclick="alert('Thanks for your feedback! 😊')">😊</button>
+          <button class="helpful-btn" onclick="alert('Thanks for your feedback! 😐')">😐</button>
+          <button class="helpful-btn" onclick="alert('Thanks for your feedback! 🙁')">🙁</button>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- THEME TOGGLE BUTTON -->
+  <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+  </button>
+
+  <script>
+    // Documentation Database (Dynamically loaded when user clicks sidebar)
+    const DOCS = {
+      overview: {
+        crumb: 'Welcome to Clonix > Clonix Help Center',
+        title: 'Data you can clone',
+        lead: 'Learn how Clonix duplicates your entire Shopify store catalog, themes, and settings with Zero-404 link rewriting and zero spreadsheet dependency.',
+        html: `
+          <h2 class="doc-h2" id="entities">What you can clone:</h2>
+          <ul>
+            <li><strong>Products and Collections:</strong> All titles, HTML descriptions, tags, options, variant pricing, barcode/SKUs, and collection rules.</li>
+            <li><strong>Metafields and Metaobjects:</strong> Custom schema definitions and entries (with topo-sorted bi-directional references).</li>
+            <li><strong>Navigation and Redirects:</strong> Multi-level nested menus and 301 URL redirects.</li>
+            <li><strong>Published Themes &amp; Assets:</strong> Complete liquid code, sections, theme settings, and CDN asset images.</li>
+            <li><strong>Pages, Blogs, and Articles:</strong> Rich formatted content with automatic internal link remapping.</li>
+            <li><strong>Files &amp; Media:</strong> Direct streaming via Cloudflare R2 vaults with zero file-size corruption.</li>
+          </ul>
+
+          <div class="doc-note">
+            <div class="doc-note-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+            <div>
+              <strong>Zero Spreadsheet Guarantee:</strong> Unlike Matrixify where you must manage confusing Excel formulas and <code>MERGE/REPLACE</code> command columns, Clonix operates via a direct 1-click cryptographic handshake.
+            </div>
+          </div>
+
+          <h2 class="doc-h2" id="how-it-works">How it works</h2>
+          <p>Clonix operates on a 14-Stage Directed Acyclic Graph (DAG) Scheduler powered by pg-boss and PostgreSQL. Direct store pairing bypasses file uploads entirely.</p>
+        `,
+        toc: [
+          { id: 'entities', text: 'What you can clone' },
+          { id: 'how-it-works', text: 'How it works' }
+        ]
+      },
+
+      pricing: {
+        crumb: 'Getting Started > Pricing and plans',
+        title: 'Pricing & Plans',
+        lead: 'Learn about Clonix pricing, the $0 Free Sandbox, one-time Clone Passes, and our Automated Free-Retry guarantee.',
+        html: `
+          <h2 class="doc-h2" id="plans-overview">Transparent, Honest Pricing</h2>
+          <p>Competitors like Duplify charge $79/month for 50 products, while Matrixify forces you to pay on both stores ($20 + $20). Clonix charges once on the destination store.</p>
+
+          <div class="doc-note">
+            <div class="doc-note-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            <div><strong>Source Store is 100% Free:</strong> You never pay on the source store. The destination store funds the clone.</div>
+          </div>
+
+          <h3 class="doc-h3" id="free-sandbox">1. Free Sandbox ($0)</h3>
+          <p>Every store can duplicate up to <strong>12 products, 1 collection, and 3 pages</strong> completely free of charge. Test the speed, verify zero-404 theme rewriting, and confirm that your store replicates perfectly before spending a penny.</p>
+
+          <h3 class="doc-h3" id="clone-pass">2. One-Time Clone Pass ($9)</h3>
+          <p>Single-use clone pass for an entire store migration. Covers unlimited products, variants, collections, metafields, and liquid themes. No recurring monthly subscriptions.</p>
+
+          <h3 class="doc-h3" id="agency-hub">3. Agency Hub ($49 / month)</h3>
+          <p>For Shopify design agencies and multibrand operators. Link unlimited destination stores using cryptographic agency tokens. Your clients install Clonix for $0 and you initiate clones seamlessly.</p>
+        `,
+        toc: [
+          { id: 'plans-overview', text: 'Plans Overview' },
+          { id: 'free-sandbox', text: 'Free Sandbox ($0)' },
+          { id: 'clone-pass', text: 'Clone Pass ($9)' },
+          { id: 'agency-hub', text: 'Agency Hub ($49)' }
+        ]
+      },
+
+      connecting: {
+        crumb: 'Using Clonix > Connecting stores',
+        title: 'Connecting Stores (Key Handshake)',
+        lead: 'Learn how to securely pair your source store and destination store using 8-character Crockford Base32 keys.',
+        html: `
+          <h2 class="doc-h2" id="pairing-steps">3-Step Pairing Process</h2>
+          <p>Clonix uses a two-sided cryptographic handshake. The source store consents to read-only export, while the destination store confirms data writes.</p>
+
+          <ol>
+            <li><strong>Install Clonix on both stores:</strong> Open the Clonix app inside your Shopify admin dashboard on both stores.</li>
+            <li><strong>Copy Destination Key:</strong> On your destination store, select "Destination store (import data)". Copy the 8-character key (e.g. <code>K9X2-W7MP</code>).</li>
+            <li><strong>Paste &amp; Connect on Source:</strong> On your source store, select "Source store (export data)", paste the key, and click <strong>Connect &amp; Audit</strong>.</li>
+          </ol>
+
+          <div class="doc-callout-grey">
+            <strong>Security Note:</strong> All keys expire after 15 minutes and are hashed with server-side SHA-256 peppers. Once claimed, keys are immediately burned to prevent replay attacks.
+          </div>
+        `,
+        toc: [
+          { id: 'pairing-steps', text: '3-Step Pairing Process' }
+        ]
+      },
+
+      zero404: {
+        crumb: 'Using Clonix > Zero-404 Link Rewriter',
+        title: 'Zero-404 Link Rewriting Engine',
+        lead: 'How Clonix automatically rewrites old store URLs, image CDN paths, and collection handles to ensure zero broken links.',
+        html: `
+          <h2 class="doc-h2" id="why-404s-happen">Why competitors leave broken 404 links</h2>
+          <p>When Matrixify or Duplify export products or themes, HTML descriptions and liquid files often contain hardcoded URLs like <code>https://old-store.myshopify.com/products/summer-shirt</code>. On the new store, visitors click these links and land on the old store or get 404 Not Found errors!</p>
+
+          <h2 class="doc-h2" id="clonix-solution">The Clonix Deep Link Rewriter</h2>
+          <p>Clonix parses all HTML content and liquid theme files using our strict token remapper:</p>
+          <ul>
+            <li><strong>Domain Substitution:</strong> Replaces occurrences of the source store domain with the destination store domain.</li>
+            <li><strong>Handle Re-indexing:</strong> Metaobject handles, blog articles, and collections are updated to match the newly generated IDs in the destination store.</li>
+            <li><strong>Liquid Template Suffixes:</strong> Custom product templates like <code>product.newmedda.liquid</code> are detected in Stage 0 and assigned correctly in Stage 5.</li>
+            <li><strong>Stage 13 Crawl:</strong> After the clone finishes, an automated crawler verifies storefront URLs to guarantee 100% parity.</li>
+          </ul>
+        `,
+        toc: [
+          { id: 'why-404s-happen', text: 'Why 404s Happen' },
+          { id: 'clonix-solution', text: 'The Clonix Solution' }
+        ]
+      },
+
+      faqs: {
+        crumb: 'FAQs and Support > Frequently Asked Questions',
+        title: 'Frequently Asked Questions',
+        lead: 'Common questions about store duplication, product limits, Excel files, and refunds.',
+        html: `
+          <h2 class="doc-h2" id="faq-limits">Is there a 3,000 product limit like Duplify?</h2>
+          <p><strong>No.</strong> Duplify crashes on stores with more than 3,000 products because of memory buffering. Clonix uses Cloudflare R2 chunked streaming to handle 50,000+ products easily without hitting timeouts.</p>
+
+          <h2 class="doc-h2" id="faq-excel">Do I have to edit Excel or CSV spreadsheets?</h2>
+          <p><strong>Never.</strong> Unlike Matrixify where you have to format columns and write <code>MERGE</code> or <code>REPLACE</code> commands, Clonix is a direct store-to-store cloner. No spreadsheets are ever required.</p>
+
+          <h2 class="doc-h2" id="faq-refund">What happens if a clone fails midway?</h2>
+          <p>Clonix has an <strong>Automated Free-Retry Guarantee</strong> (<code>releasePassIfFailedEarly</code>). If an API error or network drop halts a clone before 10% progress, your Clone Pass is automatically unlocked in the database so you can retry immediately without waiting weeks for support.</p>
+        `,
+        toc: [
+          { id: 'faq-limits', text: '3,000 Product Limit?' },
+          { id: 'faq-excel', text: 'Spreadsheet Editing?' },
+          { id: 'faq-refund', text: 'Failure & Free Retries' }
+        ]
+      }
+    };
+
+    function loadDoc(key) {
+      const doc = DOCS[key] || DOCS.overview;
+      const target = document.getElementById('doc-render-target');
+      const toc = document.getElementById('toc-container');
+
+      // Update Active Navigation Item
+      document.querySelectorAll('.nav-item-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = Array.from(document.querySelectorAll('.nav-item-btn')).find(b => b.getAttribute('onclick')?.includes(key));
+      if (activeBtn) activeBtn.classList.add('active');
+
+      // Render Content
+      target.innerHTML = `
+        <div class="breadcrumbs">${doc.crumb}</div>
+        <h1 class="doc-h1">${doc.title}</h1>
+        <p class="doc-lead">${doc.lead}</p>
+        ${doc.html}
+      `;
+
+      // Render Table of Contents
+      toc.innerHTML = doc.toc.map((item, idx) => `
+        <li><a href="#${item.id}" class="toc-link ${idx === 0 ? 'active' : ''}">${item.text}</a></li>
+      `).join('');
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleTheme() {
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    }
+
+    function filterDocs() {
+      const q = document.getElementById('search-box').value.toLowerCase();
+      document.querySelectorAll('.nav-item-btn').forEach(btn => {
+        const text = btn.innerText.toLowerCase();
+        btn.parentElement.style.display = text.includes(q) ? 'block' : 'none';
+      });
+    }
+
+    // Ctrl+K hotkey for search
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        document.getElementById('search-box').focus();
+      }
+    });
+  </script>
+
+</body>
+</html>
