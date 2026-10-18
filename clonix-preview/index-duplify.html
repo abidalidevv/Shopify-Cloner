@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clonix — High-Fidelity Shopify Store Cloner & Automated Vault</title>
+  
+  <!-- Premium Modern Typography: Archivo, Geist, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      /* Shopify Polaris Clean Theme + Modern Accents */
+      --brand-lime: #d4ff00;
+      --brand-lime-subtle: #f7fee7;
+      --brand-tinta: #0a0a0c;
+      
+      --p-green: #008060;
+      --p-green-hover: #006e52;
+      --p-green-subdued: #e4f8f0;
+      --p-green-border: #a7f3d0;
+      
+      --p-purple: #7026b9;
+      --p-purple-subdued: #f4ecfc;
+      --p-purple-border: #d4b5f7;
+      
+      --bg-canvas: #f1f2f4;
+      --bg-surface: #ffffff;
+      --bg-subtle: #fafbfb;
+      --bg-hover: #f6f6f7;
+      --bg-border: #e1e3e5;
+      
+      --border-hairline: #e4e7eb;
+      --border-subdued: #ebeef1;
+      --border-strong: #c9cccf;
+      
+      --fg-primary: #202223;
+      --fg-secondary: #6d7175;
+      --fg-muted: #8c9196;
+      --fg-subtle: #b5b9be;
+
+      /* Stage Tint Tokens */
+      --tint-emerald-bg: #ecfdf5;
+      --tint-emerald-border: #a7f3d0;
+      --tint-emerald-text: #065f46;
+
+      --tint-amber-bg: #fffbeb;
+      --tint-amber-border: #fef08a;
+      --tint-amber-text: #92400e;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-full: 9999px;
+      
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
+      --shadow-raised: 0 10px 30px -4px rgba(10, 10, 12, 0.08), 0 2px 8px rgba(10, 10, 12, 0.03);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--fg-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Shopify App Bridge Embedded Container */
+    .app-shell {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+
+    /* Top Navigation Header (Native Shopify Feel) */
+    .top-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .page-title {
+      font-family: 'Archivo', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--fg-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      font-family: inherit;
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      color: var(--fg-primary);
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: #a0a4a8;
+    }
+
+    .btn-primary {
+      background: #1a1a1a;
+      border: 1px solid #1a1a1a;
+      color: #ffffff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    .btn-primary:hover {
+      background: #2f3133;
+      border-color: #2f3133;
+    }
+
+    .btn-green {
+      background: var(--p-green);
+      border: 1px solid var(--p-green);
+      color: #ffffff;
+    }
+    .btn-green:hover {
+      background: var(--p-green-hover);
+    }
+
+    /* Feedback / Review Banner (Duplify Style) */
+    .feedback-banner {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .feedback-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .feedback-icon {
+      width: 32px;
+      height: 32px;
+      background: #fff3ea;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ea580c;
+    }
+
+    .feedback-text {
+      font-size: 13px;
+      color: var(--fg-primary);
+    }
+    .feedback-text strong {
+      display: block;
+      color: var(--fg-primary);
+    }
+
+    .stars-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stars-row {
+      display: flex;
+      gap: 3px;
+      color: #d1d5db;
+      cursor: pointer;
+    }
+    .stars-row svg:hover,
+    .stars-row svg.active {
+      color: #f59e0b;
+      fill: #f59e0b;
+    }
+
+    /* Main Navigation Tabs */
+    .main-nav {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border-hairline);
+      padding-bottom: 10px;
+    }
+
+    .nav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--fg-secondary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .nav-tab:hover {
+      background: var(--bg-hover);
+      color: var(--fg-primary);
+    }
+    .nav-tab.active {
+      background: var(--bg-surface);
+      color: var(--fg-primary);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-hairline);
+    }
+
+    /* Main Role Card Container (Duplify Pure Simplicity) */
+    .card-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .container-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--fg-primary);
+      margin-bottom: 16px;
+    }
+
+    /* 2 Role Radio Cards (Source vs Destination) */
+    .role-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .role-box {
+      border: 2px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 24px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      position: relative;
+      background: var(--bg-subtle);
+    }
+    .role-box:hover {
+      border-color: #bcc3ca;
+      background: var(--bg-surface);
+    }
+
+    .role-box.active-source {
+      border-color: var(--p-green);
+      background: #ffffff;
+      box-shadow: 0 0 0 1px var(--p-green);
+    }
+
+    .role-box.active-dest {
+      border-color: var(--p-purple);
+      background: #ffffff;
+      box-shadow: 0 0 0 1px var(--p-purple);
+    }
+
+    .radio-circle {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--border-strong);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .role-box.active-source .radio-circle {
+      border-color: var(--p-green);
+    }
+    .role-box.active-source .radio-circle::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--p-green);
+    }
+
+    .role-box.active-dest .radio-circle {
+      border-color: var(--p-purple);
+    }
+    .role-box.active-dest .radio-circle::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--p-purple);
+    }
+
+    .role-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .role-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--fg-primary);
+      margin-bottom: 4px;
+    }
+
+    /* Role Details Panel (Changes depending on clicked role) */
+    .role-details-panel {
+      background: var(--bg-hover);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .steps-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .steps-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--fg-primary);
+    }
+
+    .step-num {
+      width: 20px;
+      height: 20px;
+      background: #1a1a1a;
+      color: #ffffff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .key-action-wrap {
+      background: #ffffff;
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+    }
+
+    .key-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg-secondary);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .key-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .key-input {
+      flex: 1;
+      padding: 9px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--fg-primary);
+      background: var(--bg-subtle);
+      letter-spacing: 0.05em;
+    }
+    .key-input:focus {
+      outline: none;
+      border-color: var(--p-green);
+      background: #ffffff;
+    }
+
+    /* Video & Tutorial Banner (Duplify Style) */
+    .tutorial-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 24px;
+    }
+
+    .video-thumb {
+      width: 260px;
+      height: 140px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .video-play-btn {
+      background: rgba(10, 10, 12, 0.75);
+      color: #ffffff;
+      backdrop-filter: blur(4px);
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .tutorial-content {
+      padding: 20px 24px;
+    }
+
+    .tutorial-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--fg-primary);
+      margin-bottom: 4px;
+    }
+
+    .tutorial-desc {
+      font-size: 13px;
+      color: var(--fg-secondary);
+      margin-bottom: 12px;
+    }
+
+    .tutorial-links {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .link-guide {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--p-green);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .link-guide:hover {
+      text-decoration: underline;
+    }
+
+    /* Review-Driven Feature Guarantees (The Antidote to Duplify & Matrixify Complaints) */
+    .guarantees-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .guarantee-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .guarantee-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .guarantee-tag.green { color: #047857; }
+    .guarantee-tag.purple { color: #6d28d9; }
+    .guarantee-tag.blue { color: #0284c7; }
+    .guarantee-tag.amber { color: #b45309; }
+
+    .guarantee-text {
+      font-size: 12.5px;
+      color: var(--fg-primary);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    /* Live Preflight Inspection & Progress Bar (When Link Active) */
+    .active-run-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-card);
+      display: none; /* Shown when connected or simulation triggered */
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .store-pair-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: var(--bg-subtle);
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-hairline);
+    }
+
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .metric-pill {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      text-align: center;
+    }
+    .metric-pill .val {
+      font-family: 'Archivo', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--fg-primary);
+      display: block;
+    }
+    .metric-pill .lbl {
+      font-size: 11px;
+      color: var(--fg-secondary);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    /* Progress Bar */
+    .progress-track {
+      height: 10px;
+      background: #e5e7eb;
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #059669);
+      border-radius: var(--radius-full);
+      transition: width 0.4s ease;
+    }
+
+    .stage-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg-secondary);
+      margin-bottom: 20px;
+    }
+
+    /* Interactive Simulation Trigger */
+    .demo-ribbon {
+      background: #faf5ff;
+      border: 1px dashed #d8b4fe;
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+    }
+    .demo-ribbon-text {
+      font-size: 12.5px;
+      color: #6b21a8;
+      font-weight: 500;
+    }
+
+    /* Backups View (Duplify Style) */
+    .backups-hero-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 48px 24px;
+      text-align: center;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 20px;
+    }
+
+    .backups-hero-icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 16px;
+      background: #fff7ed;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ea580c;
+    }
+
+    /* Pricing Plans Card */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .plan-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .plan-card.featured {
+      border: 2px solid var(--p-green);
+    }
+    .plan-badge {
+      position: absolute;
+      top: -12px;
+      right: 18px;
+      background: var(--p-green);
+      color: #ffffff;
+      padding: 2px 10px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .plan-price {
+      font-family: 'Archivo', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--fg-primary);
+      margin: 12px 0 6px;
+    }
+
+    .plan-desc {
+      font-size: 13px;
+      color: var(--fg-secondary);
+      margin-bottom: 20px;
+    }
+
+    .plan-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+      flex: 1;
+    }
+    .plan-features li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--fg-primary);
+    }
+
+    /* Toast Notification */
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1a1a1a;
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-shell">
+    
+    <!-- Top Shopify App Header -->
+    <header class="top-header">
+      <div>
+        <h1 class="page-title" id="page-heading">Connect stores</h1>
+        <div style="font-size: 12.5px; color: var(--fg-secondary); margin-top: 2px;">
+          Clonix Pro &bull; Zero-404 Shopify Store Duplicator &amp; Automated Vault
+        </div>
+      </div>
+      
+      <div class="top-actions">
+        <button class="btn btn-secondary" onclick="switchTab('pricing')">Billing</button>
+        <button class="btn btn-primary" onclick="resetToNewConnection()">+ New connection</button>
+      </div>
+    </header>
+
+    <!-- Review Rating Feedback Banner (Duplify Style) -->
+    <div class="feedback-banner">
+      <div class="feedback-left">
+        <div class="feedback-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        </div>
+        <div class="feedback-text">
+          <strong>Clonix was built to make store duplication seamless, fast, and zero-error.</strong>
+          How would you rate your experience so far?
+        </div>
+      </div>
+      <div class="stars-group">
+        <div class="stars-row">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        </div>
+        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;" onclick="showToast('Thank you for rating Clonix!')">Send</button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="main-nav">
+      <button class="nav-tab active" id="tab-connect" onclick="switchTab('connect')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        Connect stores
+      </button>
+      <button class="nav-tab" id="tab-backups" onclick="switchTab('backups')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        Backups
+      </button>
+      <button class="nav-tab" id="tab-pricing" onclick="switchTab('pricing')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 18V6"></path></svg>
+        Plans &amp; Pricing ($0 / $9 / $49)
+      </button>
+    </nav>
+
+    <!-- VIEW 1: CONNECT STORES (DUPLIFY PURITY + CLONIX RESOLUTION) -->
+    <div id="view-connect">
+      
+      <!-- Review-Driven Guarantees (The Competitive Moat) -->
+      <div class="guarantees-grid">
+        <div class="guarantee-box">
+          <div class="guarantee-tag green">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            No Spreadsheets
+          </div>
+          <div class="guarantee-text">No Excel columns, formulas or broken CSV headers. Direct 1-click store sync.</div>
+        </div>
+        <div class="guarantee-box">
+          <div class="guarantee-tag purple">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Zero-404 Rewriter
+          </div>
+          <div class="guarantee-text">Themes, internal links, and assets are rewritten so new store has zero broken links.</div>
+        </div>
+        <div class="guarantee-box">
+          <div class="guarantee-tag blue">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Unlimited Scale
+          </div>
+          <div class="guarantee-text">No 3,000 product trap. R2 bulk pipeline scales effortlessly from 10 to 50,000+ items.</div>
+        </div>
+        <div class="guarantee-box">
+          <div class="guarantee-tag amber">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Free Retry Guarantee
+          </div>
+          <div class="guarantee-text">You only pay for a clone that works. Failed early? Pass auto-unlocks for instant retry.</div>
+        </div>
+      </div>
+
+      <!-- Main Role Selection Box -->
+      <div class="card-container">
+        <div class="container-title">Select how you'll use Clonix in this store:</div>
+
+        <div class="role-grid">
+          
+          <!-- Source Store (Export Data) -->
+          <div class="role-box active-source" id="role-source" onclick="selectRole('source')">
+            <div class="radio-circle"></div>
+            <div class="role-icon">
+              <!-- Duplify-style clean browser window with green arrow -->
+              <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+                <rect x="6" y="10" width="52" height="42" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2.5"/>
+                <rect x="6" y="10" width="52" height="12" rx="6" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2.5"/>
+                <circle cx="14" cy="16" r="2" fill="#9ca3af"/>
+                <circle cx="20" cy="16" r="2" fill="#9ca3af"/>
+                <circle cx="26" cy="16" r="2" fill="#9ca3af"/>
+                <path d="M32 26v20m0 0l-7-7m7 7l7-7" stroke="#008060" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="role-name">Source store (export data)</div>
+            <div style="font-size: 12px; color: var(--fg-secondary);">Send catalog, liquid themes &amp; settings ($0 Free forever)</div>
+          </div>
+
+          <!-- Destination Store (Import Data) -->
+          <div class="role-box" id="role-dest" onclick="selectRole('dest')">
+            <div class="radio-circle"></div>
+            <div class="role-icon">
+              <!-- Duplify-style clean browser window with purple arrow -->
+              <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+                <rect x="6" y="10" width="52" height="42" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2.5"/>
+                <rect x="6" y="10" width="52" height="12" rx="6" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2.5"/>
+                <circle cx="14" cy="16" r="2" fill="#9ca3af"/>
+                <circle cx="20" cy="16" r="2" fill="#9ca3af"/>
+                <circle cx="26" cy="16" r="2" fill="#9ca3af"/>
+                <path d="M32 46V26m0 0l-7 7m7-7l7 7" stroke="#7026b9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="role-name">Destination store (import data)</div>
+            <div style="font-size: 12px; color: var(--fg-secondary);">Receive cloned catalog with zero-404 verification</div>
+          </div>
+
+        </div>
+
+        <!-- Dynamic Role Step Details (Source Mode View) -->
+        <div class="role-details-panel" id="panel-source-mode">
+          <div>
+            <ul class="steps-list">
+              <li>
+                <span class="step-num">1</span>
+                <span>Install Clonix on your destination store. If you don't have one, <a href="https://shopify.com" target="_blank" style="color:var(--p-green); font-weight:600;">create a new store</a>.</span>
+              </li>
+              <li>
+                <span class="step-num">2</span>
+                <span>In the destination store's Clonix app, copy the unique <strong>Store Key</strong>.</span>
+              </li>
+              <li>
+                <span class="step-num">3</span>
+                <span>Paste the key on the right to securely link the two stores.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="key-action-wrap">
+            <label class="key-label">Destination store's key</label>
+            <div class="key-input-row">
+              <input type="text" class="key-input" id="dest-key-input" placeholder="e.g. JBW7-X3VR-E9RA" value="JBW7-X3VR-E9RA">
+              <button class="btn btn-green" onclick="connectAndInspect()">Connect</button>
+            </div>
+            <div style="font-size: 11px; color: var(--fg-muted); margin-top: 6px;">
+              Single-use cryptographic handshake. Expires in 15 minutes.
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Role Step Details (Destination Mode View) -->
+        <div class="role-details-panel" id="panel-dest-mode" style="display: none;">
+          <div>
+            <ul class="steps-list">
+              <li>
+                <span class="step-num">1</span>
+                <span>Install Clonix on your source store (the store you want to copy from).</span>
+              </li>
+              <li>
+                <span class="step-num">2</span>
+                <span>Copy <strong>This Store's Key</strong> shown on the right.</span>
+              </li>
+              <li>
+                <span class="step-num">3</span>
+                <span>Go to your source store's Clonix app and paste this key there to start the transfer.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="key-action-wrap">
+            <label class="key-label">This store's unique pairing key</label>
+            <div class="key-input-row">
+              <input type="text" class="key-input" id="this-store-key" value="K9X2-W7MP-3Y8B" readonly>
+              <button class="btn btn-secondary" onclick="copyThisKey()">Copy</button>
+            </div>
+            <div style="font-size: 11px; color: #059669; font-weight: 600; margin-top: 6px; display: flex; align-items: center; gap: 4px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
+              Ready to link &bull; 15-minute secure TTL active
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Video Tutorial & Quickstart Card (Duplify Style) -->
+      <div class="tutorial-card">
+        <div class="video-thumb" onclick="connectAndInspect()">
+          <div class="video-play-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            1:03 Demo
+          </div>
+        </div>
+        <div class="tutorial-content">
+          <div class="tutorial-title">Let's duplicate your first store together</div>
+          <div class="tutorial-desc">In this 1-minute video we show you how easy it is to clone your products, liquid themes, and settings with Zero 404s.</div>
+          <div class="tutorial-links">
+            <button class="btn btn-secondary" onclick="connectAndInspect()">Watch 1-Min Walkthrough</button>
+            <a href="#guide" class="link-guide" onclick="showToast('Opening quickstart guide...')">
+              View user guide
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVE PIPELINE & LIVE PROGRESS MONITOR (Triggered on Connect) -->
+      <div class="active-run-panel" id="active-pipeline-card">
+        
+        <div class="panel-header">
+          <div>
+            <div style="font-size: 16px; font-weight: 700; color: var(--fg-primary);">
+              Connected: Ready to Duplicate
+            </div>
+            <div style="font-size: 12px; color: var(--fg-secondary); margin-top: 2px;">
+              Preflight Audit Complete &bull; Zero-404 Engine Active
+            </div>
+          </div>
+          
+          <div class="store-pair-badge">
+            <span style="color: #059669; font-weight: 700;">ph0igg-jv.myshopify.com</span>
+            &rarr;
+            <span style="color: #7c3aed; font-weight: 700;">destination-store.myshopify.com</span>
+          </div>
+        </div>
+
+        <!-- Entity Inspection Breakdown (Matrixify completeness, zero spreadsheet hassle) -->
+        <div class="metrics-row">
+          <div class="metric-pill">
+            <span class="val">142</span>
+            <span class="lbl">Products</span>
+          </div>
+          <div class="metric-pill">
+            <span class="val">18</span>
+            <span class="lbl">Collections</span>
+          </div>
+          <div class="metric-pill">
+            <span class="val">1</span>
+            <span class="lbl">Theme</span>
+          </div>
+          <div class="metric-pill">
+            <span class="val">12</span>
+            <span class="lbl">Metaobjects</span>
+          </div>
+          <div class="metric-pill">
+            <span class="val">250</span>
+            <span class="lbl">CDN Files</span>
+          </div>
+          <div class="metric-pill">
+            <span class="val" style="color: #059669;">0</span>
+            <span class="lbl">404 Errors</span>
+          </div>
+        </div>
+
+        <!-- Live Progress Track -->
+        <div class="progress-track">
+          <div class="progress-fill" id="run-progress-fill"></div>
+        </div>
+        
+        <div class="stage-status-bar">
+          <span id="stage-desc-text">Stage: Awaiting confirmation...</span>
+          <span id="stage-percent-text">0%</span>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button class="btn btn-secondary" onclick="resetToNewConnection()">Cancel</button>
+          <button class="btn btn-green" id="start-clone-btn" onclick="startCloningSimulation()">
+            Start Duplication (Zero-404 Guaranteed)
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- VIEW 2: BACKUPS VIEW (DUPLIFY STYLE) -->
+    <div id="view-backups" style="display: none;">
+      
+      <div class="backups-hero-box">
+        <div class="backups-hero-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+        <h2 style="font-size: 20px; font-weight: 700; color: var(--fg-primary); margin-bottom: 6px;">Protect the essentials</h2>
+        <p style="font-size: 13.5px; color: var(--fg-secondary); max-width: 520px; margin: 0 auto 24px;">
+          Daily automated and manual vault backups of your products, liquid themes, metafields, and pages. Included with your Clonix plan.
+        </p>
+
+        <div style="display: flex; justify-content: center; gap: 12px;">
+          <button class="btn btn-secondary" onclick="showToast('Connecting external store for backup...')">Backup a different store</button>
+          <button class="btn btn-primary" onclick="showToast('Creating instant AES-256 encrypted backup snapshot...')">Backup current store</button>
+        </div>
+      </div>
+
+      <div style="text-align: center; font-size: 12px; color: var(--fg-muted);">
+        Backups are kept for 6 months, or 30 days after plan cancellation. Stored securely on private Cloudflare R2 vaults.
+      </div>
+
+    </div>
+
+    <!-- VIEW 3: PLANS & PRICING -->
+    <div id="view-pricing" style="display: none;">
+      
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h2 style="font-size: 22px; font-weight: 700; color: var(--fg-primary);">Transparent, fair pricing. No traps.</h2>
+        <p style="font-size: 13px; color: var(--fg-secondary); margin-top: 4px;">
+          Unlike competitors who charge $79/mo for 50 products or force you to pay twice, you only pay for clones that work.
+        </p>
+      </div>
+
+      <div class="pricing-grid">
+        
+        <!-- Tier 1: Free Sandbox -->
+        <div class="plan-card">
+          <div style="font-size: 16px; font-weight: 700;">Free Sandbox</div>
+          <div class="plan-price">$0</div>
+          <div class="plan-desc">Test real store-to-store cloning on small catalogs before paying a single dollar.</div>
+          
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Up to 12 Products</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> 1 Collection &amp; 3 Pages</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Zero-404 Link Rewriting</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Preflight Health Audit</li>
+          </ul>
+
+          <button class="btn btn-secondary" onclick="showToast('Free Sandbox active by default!')">Current Plan</button>
+        </div>
+
+        <!-- Tier 2: Clone Pass (Featured) -->
+        <div class="plan-card featured">
+          <span class="plan-badge">MOST POPULAR</span>
+          <div style="font-size: 16px; font-weight: 700;">Clone Pass</div>
+          <div class="plan-price">$9 <span style="font-size: 14px; font-weight: 500; color: var(--fg-muted);">one-time</span></div>
+          <div class="plan-desc">Complete store clone for single migrations. Pay once, done. No monthly subscription.</div>
+          
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Unlimited Products</strong> (No 3k limit)</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Full Theme &amp; Liquid Assets</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Metaobjects &amp; Custom Fields</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Free Auto-Retry Guarantee</strong></li>
+          </ul>
+
+          <button class="btn btn-green" onclick="showToast('Opening Shopify 1-Time Purchase Approval ($9)...')">Purchase Clone Pass</button>
+        </div>
+
+        <!-- Tier 3: Agency Hub -->
+        <div class="plan-card">
+          <div style="font-size: 16px; font-weight: 700;">Agency Hub</div>
+          <div class="plan-price">$49 <span style="font-size: 14px; font-weight: 500; color: var(--fg-muted);">/ month</span></div>
+          <div class="plan-desc">For web agencies &amp; multisite merchants duplicating stores into client accounts.</div>
+          
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Unlimited Destination Stores</strong></li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Clients install for $0 free</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Priority R2 High-Speed Workers</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Agency Token Handshake</li>
+          </ul>
+
+          <button class="btn btn-primary" onclick="showToast('Starting 30-Day Agency Subscription ($49)...')">Subscribe Agency Hub</button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Interactive Toast Notification -->
+  <div class="toast-msg" id="toast-el">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span id="toast-text">Action completed successfully</span>
+  </div>
+
+  <script>
+    // Tab Switching
+    function switchTab(tab) {
+      document.getElementById('view-connect').style.display = tab === 'connect' ? 'block' : 'none';
+      document.getElementById('view-backups').style.display = tab === 'backups' ? 'block' : 'none';
+      document.getElementById('view-pricing').style.display = tab === 'pricing' ? 'block' : 'none';
+
+      document.getElementById('tab-connect').classList.toggle('active', tab === 'connect');
+      document.getElementById('tab-backups').classList.toggle('active', tab === 'backups');
+      document.getElementById('tab-pricing').classList.toggle('active', tab === 'pricing');
+
+      const headings = {
+        connect: 'Connect stores',
+        backups: 'Backups',
+        pricing: 'Plans & Pricing'
+      };
+      document.getElementById('page-heading').innerText = headings[tab] || 'Clonix';
+    }
+
+    // Role Selection (Source vs Destination)
+    function selectRole(role) {
+      const sourceBox = document.getElementById('role-source');
+      const destBox = document.getElementById('role-dest');
+      const sourcePanel = document.getElementById('panel-source-mode');
+      const destPanel = document.getElementById('panel-dest-mode');
+
+      if (role === 'source') {
+        sourceBox.className = 'role-box active-source';
+        destBox.className = 'role-box';
+        sourcePanel.style.display = 'grid';
+        destPanel.style.display = 'none';
+      } else {
+        sourceBox.className = 'role-box';
+        destBox.className = 'role-box active-dest';
+        sourcePanel.style.display = 'none';
+        destPanel.style.display = 'grid';
+      }
+    }
+
+    // Copy Key Helper
+    function copyThisKey() {
+      const input = document.getElementById('this-store-key');
+      input.select();
+      navigator.clipboard.writeText(input.value);
+      showToast('Copied key to clipboard: ' + input.value);
+    }
+
+    // Connect & Inspect simulation
+    function connectAndInspect() {
+      const pipelineCard = document.getElementById('active-pipeline-card');
+      pipelineCard.style.display = 'block';
+      pipelineCard.scrollIntoView({ behavior: 'smooth' });
+      showToast('Handshake verified: Preflight analysis ready!');
+    }
+
+    // Reset button
+    function resetToNewConnection() {
+      document.getElementById('active-pipeline-card').style.display = 'none';
+      document.getElementById('run-progress-fill').style.width = '0%';
+      document.getElementById('stage-desc-text').innerText = 'Stage: Awaiting confirmation...';
+      document.getElementById('stage-percent-text').innerText = '0%';
+      const btn = document.getElementById('start-clone-btn');
+      btn.disabled = false;
+      btn.innerText = 'Start Duplication (Zero-404 Guaranteed)';
+      showToast('Reset connection wizard');
+    }
+
+    // Live Cloning Progress Simulation
+    function startCloningSimulation() {
+      const fill = document.getElementById('run-progress-fill');
+      const desc = document.getElementById('stage-desc-text');
+      const pct = document.getElementById('stage-percent-text');
+      const btn = document.getElementById('start-clone-btn');
+      
+      btn.disabled = true;
+      btn.innerText = 'Duplicating in Progress...';
+
+      const stages = [
+        { pct: 15, text: 'Stage 0: Extracting source catalog & probe...' },
+        { pct: 35, text: 'Stage 2: Uploading 250 CDN files to Cloudflare R2...' },
+        { pct: 60, text: 'Stage 5: Creating 142 products & variants...' },
+        { pct: 85, text: 'Stage 11: Rewriting liquid theme & zero-404 URLs...' },
+        { pct: 100, text: 'Stage 13: Parity verification complete! Store duplicated cleanly.' }
+      ];
+
+      let idx = 0;
+      const interval = setInterval(() => {
+        if (idx >= stages.length) {
+          clearInterval(interval);
+          btn.innerText = 'Clone Finished (100% Parity)';
+          btn.style.background = '#047857';
+          showToast('Store duplication finished with 0 errors!');
+          return;
+        }
+        fill.style.width = stages[idx].pct + '%';
+        pct.innerText = stages[idx].pct + '%';
+        desc.innerText = stages[idx].text;
+        idx++;
+      }, 900);
+    }
+
+    // Toast Notification Helper
+    function showToast(msg) {
+      const toast = document.getElementById('toast-el');
+      document.getElementById('toast-text').innerText = msg;
+      toast.style.display = 'inline-flex';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 3200);
+    }
+  </script>
+
+</body>
+</html>

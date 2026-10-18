@@ -12,7 +12,7 @@
   
   <style>
     :root {
-      /* Native Shopify Polaris + Clonify Accents */
+      /* Native Shopify Polaris + High-Tech Clonify Accents */
       --brand-lime: #d4ff00;
       --brand-lime-subtle: #f7fee7;
       --brand-tinta: #0a0a0c;
@@ -23,11 +23,15 @@
       --p-green-subdued: #e4f8f0;
       --p-green-border: #a7f3d0;
       
-      --bg-canvas: #f6f6f7;
+      --p-purple: #7026b9;
+      --p-purple-subdued: #f4ecfc;
+      --p-purple-border: #d4b5f7;
+      
+      --bg-canvas: #f1f2f4;
       --bg-surface: #ffffff;
       --bg-subtle: #fafbfb;
-      --bg-hover: #f1f2f3;
-      --bg-border: #dbe0e5;
+      --bg-hover: #f6f6f7;
+      --bg-border: #e1e3e5;
       
       --border-hairline: #e4e7eb;
       --border-subdued: #ebeef1;
@@ -51,18 +55,14 @@
       --tint-amber-border: #fef08a;
       --tint-amber-text: #92400e;
 
-      --tint-lavender-bg: #f5f3ff;
-      --tint-lavender-border: #ddd6fe;
-      --tint-lavender-text: #6b21a8;
-
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 14px;
       --radius-full: 9999px;
       
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
-      --shadow-raised: 0 8px 24px -4px rgba(10, 10, 12, 0.06), 0 2px 6px rgba(10, 10, 12, 0.02);
+      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
+      --shadow-raised: 0 10px 30px -4px rgba(10, 10, 12, 0.08), 0 2px 8px rgba(10, 10, 12, 0.03);
     }
 
     * {
@@ -80,19 +80,18 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Shopify App Bridge Shell */
     .app-shell {
-      max-width: 1100px;
+      max-width: 1060px;
       margin: 0 auto;
       padding: 24px 20px 80px;
     }
 
-    /* Top App Navigation Bar (Shopify Native Feel) */
-    .top-bar {
+    /* Top Navigation Header (Shopify Native App Bridge) */
+    .top-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       padding-bottom: 16px;
       border-bottom: 1px solid var(--border-hairline);
     }
@@ -117,9 +116,9 @@
       box-shadow: 0 2px 6px rgba(10, 10, 12, 0.15);
     }
 
-    .brand-title {
+    .page-title {
       font-family: 'Archivo', sans-serif;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 700;
       color: var(--fg-primary);
       letter-spacing: -0.01em;
@@ -134,129 +133,208 @@
       gap: 10px;
     }
 
-    .store-connection-pill {
+    .store-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
+      padding: 6px 12px;
       background: var(--bg-surface);
       border: 1px solid var(--border-hairline);
-      padding: 6px 14px;
       border-radius: var(--radius-full);
-      font-size: 13px;
-      font-weight: 500;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
       box-shadow: var(--shadow-sm);
     }
 
-    .status-dot-pulse {
-      position: relative;
+    .status-pulse {
       width: 8px;
       height: 8px;
-    }
-
-    .status-dot-pulse .core {
-      width: 8px;
-      height: 8px;
-      background-color: var(--p-green);
+      background: #10b981;
       border-radius: 50%;
-      position: absolute;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
     }
 
-    .status-dot-pulse .ring {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: var(--p-green);
-      opacity: 0.4;
-      animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-      position: absolute;
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      font-family: inherit;
     }
 
-    @keyframes pulse-ring {
-      0% { transform: scale(1); opacity: 0.6; }
-      70% { transform: scale(2.6); opacity: 0; }
-      100% { transform: scale(3); opacity: 0; }
+    .btn-secondary {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      color: var(--fg-primary);
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: #a0a4a8;
     }
 
-    /* Top Notice Banner */
-    .notice-banner {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
+    .btn-primary {
+      background: #1a1a1a;
+      border: 1px solid #1a1a1a;
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: #2f3133;
+    }
+
+    .btn-green {
+      background: var(--p-green);
+      border: 1px solid var(--p-green);
+      color: #ffffff;
+    }
+    .btn-green:hover {
+      background: var(--p-green-hover);
+    }
+
+    /* Feedback / Rating Banner (Duplify Style) */
+    .feedback-banner {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
       border-radius: var(--radius-md);
       padding: 12px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 24px;
+      margin-bottom: 18px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .feedback-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .feedback-icon {
+      width: 30px;
+      height: 30px;
+      background: #fff3ea;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ea580c;
+    }
+
+    .feedback-text {
+      font-size: 13px;
+      color: var(--fg-primary);
+    }
+    .feedback-text strong {
+      display: block;
+    }
+
+    .stars-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stars-row {
+      display: flex;
+      gap: 3px;
+      color: #f59e0b;
+      cursor: pointer;
+    }
+
+    /* Navigation Tabs */
+    .main-nav {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border-hairline);
+      padding-bottom: 10px;
+    }
+
+    .nav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--fg-secondary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .nav-tab:hover {
+      background: var(--bg-hover);
+      color: var(--fg-primary);
+    }
+    .nav-tab.active {
+      background: var(--bg-surface);
+      color: var(--fg-primary);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-hairline);
+    }
+
+    /* Review-Driven Feature Guarantees (The Competitive Moat) */
+    .guarantees-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .guarantee-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 14px;
       box-shadow: var(--shadow-sm);
     }
 
-    .notice-text {
-      font-size: 13px;
-      color: #14532d;
-    }
-
-    .notice-text strong {
-      font-weight: 600;
-    }
-
-    .badge-lime {
-      background: var(--brand-lime);
-      color: var(--brand-tinta);
-      font-family: 'JetBrains Mono', monospace;
+    .guarantee-tag {
       font-size: 11px;
       font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 4px;
-      letter-spacing: 0.02em;
-    }
-
-    /* Tabs (Shopify Style) */
-    .tab-bar {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 22px;
-      border-bottom: 1px solid var(--border-hairline);
-      padding-bottom: 2px;
-    }
-
-    .tab-btn {
-      background: none;
-      border: none;
-      padding: 9px 16px;
-      font-family: 'Geist', sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--fg-secondary);
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.15s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 5px;
     }
+    .guarantee-tag.green { color: #047857; }
+    .guarantee-tag.purple { color: #6d28d9; }
+    .guarantee-tag.blue { color: #0284c7; }
+    .guarantee-tag.amber { color: #b45309; }
 
-    .tab-btn:hover {
+    .guarantee-text {
+      font-size: 12.5px;
       color: var(--fg-primary);
+      font-weight: 500;
+      line-height: 1.4;
     }
 
-    .tab-btn.active {
-      color: var(--p-green);
-      border-bottom-color: var(--p-green);
-      font-weight: 600;
+    /* Main Role Card Container (Duplify Pure Simplicity) */
+    .card-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-card);
     }
 
-    /* Role Selection (Source vs Destination - Native Feel) */
-    .section-title {
-      font-family: 'Archivo', sans-serif;
-      font-size: 17px;
+    .container-title {
+      font-size: 14px;
       font-weight: 700;
       color: var(--fg-primary);
-      margin-bottom: 6px;
-    }
-
-    .section-subtitle {
-      font-size: 13px;
-      color: var(--fg-secondary);
       margin-bottom: 16px;
     }
 
@@ -264,48 +342,40 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
-    @media (max-width: 768px) {
-      .role-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .role-card {
-      background: var(--bg-surface);
+    .role-box {
       border: 2px solid var(--border-hairline);
-      border-radius: var(--radius-lg);
-      padding: 22px;
+      border-radius: var(--radius-md);
+      padding: 24px 20px;
+      text-align: center;
       cursor: pointer;
-      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.18s ease;
       position: relative;
-      display: flex;
-      flex-direction: column;
-      box-shadow: var(--shadow-card);
+      background: var(--bg-subtle);
+    }
+    .role-box:hover {
+      border-color: #bcc3ca;
+      background: var(--bg-surface);
     }
 
-    .role-card:hover {
-      border-color: #b5d5ca;
-      box-shadow: var(--shadow-raised);
-      transform: translateY(-1px);
-    }
-
-    .role-card.selected {
+    .role-box.active-source {
       border-color: var(--p-green);
-      background: #fafdfc;
-      box-shadow: 0 0 0 1px var(--p-green), var(--shadow-raised);
+      background: #ffffff;
+      box-shadow: 0 0 0 1px var(--p-green);
     }
 
-    .role-radio-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
+    .role-box.active-dest {
+      border-color: var(--p-purple);
+      background: #ffffff;
+      box-shadow: 0 0 0 1px var(--p-purple);
     }
 
-    .role-radio-circle {
+    .radio-circle {
+      position: absolute;
+      top: 14px;
+      left: 14px;
       width: 18px;
       height: 18px;
       border-radius: 50%;
@@ -313,119 +383,213 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.15s ease;
     }
-
-    .role-card.selected .role-radio-circle {
+    .role-box.active-source .radio-circle {
       border-color: var(--p-green);
+    }
+    .role-box.active-source .radio-circle::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
       background: var(--p-green);
     }
 
-    .role-radio-circle::after {
+    .role-box.active-dest .radio-circle {
+      border-color: var(--p-purple);
+    }
+    .role-box.active-dest .radio-circle::after {
       content: '';
-      width: 6px;
-      height: 6px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      background: #ffffff;
-      opacity: 0;
-      transition: opacity 0.15s ease;
+      background: var(--p-purple);
     }
 
-    .role-card.selected .role-radio-circle::after {
-      opacity: 1;
-    }
-
-    .role-badge {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: var(--radius-full);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .role-badge.green {
-      background: var(--p-green-subdued);
-      color: #005a43;
-    }
-
-    .role-badge.purple {
-      background: var(--tint-lavender-bg);
-      color: var(--tint-lavender-text);
-    }
-
-    .role-icon-box {
-      width: 52px;
-      height: 52px;
-      border-radius: var(--radius-md);
+    .role-icon {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 12px;
-    }
-
-    .role-icon-box.source {
-      background: #e4f8f0;
-      color: var(--p-green);
-    }
-
-    .role-icon-box.dest {
-      background: #ede9fe;
-      color: #6d28d9;
     }
 
     .role-name {
-      font-family: 'Archivo', sans-serif;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       color: var(--fg-primary);
       margin-bottom: 4px;
     }
 
-    .role-desc {
-      font-size: 13px;
-      color: var(--fg-secondary);
-      line-height: 1.45;
-      margin-bottom: 14px;
-      flex-grow: 1;
+    .role-details-panel {
+      background: var(--bg-hover);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+      align-items: center;
     }
 
-    .role-features {
+    .steps-list {
       list-style: none;
-      font-size: 12.5px;
-      color: var(--fg-secondary);
-      border-top: 1px solid var(--border-subdued);
-      padding-top: 12px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 12px;
     }
 
-    .role-features li {
+    .steps-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--fg-primary);
+    }
+
+    .step-num {
+      width: 20px;
+      height: 20px;
+      background: #1a1a1a;
+      color: #ffffff;
+      border-radius: 50%;
       display: flex;
       align-items: center;
-      gap: 7px;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
     }
 
-    /* Orbital Synchronization Card (When Connected) */
-    .orbital-sync-card {
-      background: var(--brand-tinta);
-      color: #ffffff;
-      border-radius: var(--radius-lg);
-      padding: 24px 28px;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-raised);
-      position: relative;
+    .key-action-wrap {
+      background: #ffffff;
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+    }
+
+    .key-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg-secondary);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .key-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .key-input {
+      flex: 1;
+      padding: 9px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--fg-primary);
+      background: var(--bg-subtle);
+      letter-spacing: 0.05em;
+    }
+    .key-input:focus {
+      outline: none;
+      border-color: var(--p-green);
+      background: #ffffff;
+    }
+
+    /* Video & Tutorial Banner (Duplify Style) */
+    .tutorial-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
       overflow: hidden;
+      display: flex;
+      align-items: center;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 24px;
+    }
+
+    .video-thumb {
+      width: 260px;
+      height: 135px;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #c026d3 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .video-play-btn {
+      background: rgba(10, 10, 12, 0.75);
+      color: #ffffff;
+      backdrop-filter: blur(4px);
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .tutorial-content {
+      padding: 20px 24px;
+    }
+
+    .tutorial-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--fg-primary);
+      margin-bottom: 4px;
+    }
+
+    .tutorial-desc {
+      font-size: 13px;
+      color: var(--fg-secondary);
+      margin-bottom: 12px;
+    }
+
+    .tutorial-links {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .link-guide {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--p-green);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* LIVE ORBITAL SYNCHRONIZATION CANVAS (From V1 Design - Premium High-Tech Feel) */
+    .orbital-sync-card {
+      background: var(--brand-tinta-surface);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin-bottom: 24px;
+      color: #ffffff;
+      box-shadow: 0 12px 36px -4px rgba(10, 10, 12, 0.2);
     }
 
     .orbital-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
-      position: relative;
-      z-index: 2;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .orbital-title {
@@ -433,57 +597,55 @@
       font-size: 16px;
       font-weight: 700;
       color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .orbital-subtitle {
-      font-size: 12.5px;
+      font-size: 12px;
       color: #9ca3af;
       margin-top: 2px;
     }
 
     .orbital-canvas {
-      position: relative;
-      width: 100%;
-      height: 110px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 30px;
-      z-index: 2;
+      position: relative;
+      padding: 20px 30px;
     }
 
     .orbital-node {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
-      z-index: 3;
+      z-index: 2;
     }
 
     .node-box {
-      width: 48px;
-      height: 48px;
-      border-radius: var(--radius-md);
-      background: var(--brand-tinta-surface);
+      width: 54px;
+      height: 54px;
+      background: #1e2025;
       border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-md);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      margin-bottom: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
 
     .node-box.center-core {
-      width: 56px;
-      height: 56px;
-      border-color: var(--brand-lime);
+      background: #252830;
+      border: 2px solid var(--brand-lime);
       box-shadow: 0 0 20px rgba(212, 255, 0, 0.25);
     }
 
     .node-label {
-      font-family: 'Archivo', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      color: #ffffff;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #e5e7eb;
     }
 
     .node-sub {
@@ -498,311 +660,41 @@
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none;
       z-index: 1;
+      pointer-events: none;
     }
 
-    /* Interactive Role Workspace Container */
-    .workspace-card {
+    /* PREFLIGHT PARITY TABLE (From V1 Design - Matrixify Completeness with Zero Spreadsheets) */
+    .parity-card {
       background: var(--bg-surface);
       border: 1px solid var(--border-hairline);
-      border-radius: var(--radius-lg);
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-card);
-    }
-
-    .code-box {
-      background: var(--bg-subtle);
-      border: 1px dashed var(--border-strong);
       border-radius: var(--radius-md);
-      padding: 20px;
-      text-align: center;
-      margin: 16px 0;
-    }
-
-    .code-label {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--fg-muted);
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-
-    .code-string {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 32px;
-      font-weight: 700;
-      letter-spacing: 0.15em;
-      color: var(--fg-primary);
-      margin-bottom: 10px;
-      user-select: all;
-    }
-
-    .code-meta {
-      font-size: 12px;
-      color: var(--fg-secondary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-    }
-
-    /* Buttons */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      font-family: 'Geist', sans-serif;
-      font-size: 13.5px;
-      font-weight: 600;
-      padding: 9px 16px;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      text-decoration: none;
-      border: 1px solid transparent;
-      line-height: 1;
-    }
-
-    .btn-primary {
-      background-color: var(--p-green);
-      color: #fff;
-    }
-
-    .btn-primary:hover {
-      background-color: var(--p-green-hover);
-    }
-
-    .btn-secondary {
-      background-color: var(--bg-surface);
-      color: var(--fg-primary);
-      border-color: var(--border-hairline);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .btn-secondary:hover {
-      background-color: var(--bg-hover);
-      border-color: var(--border-strong);
-    }
-
-    .btn-lime {
-      background: var(--brand-lime);
-      color: var(--brand-tinta);
-      box-shadow: 0 2px 6px rgba(212, 255, 0, 0.3);
-    }
-
-    .btn-lime:hover {
-      background: #c8f400;
-    }
-
-    .input-field {
-      width: 100%;
-      padding: 10px 14px;
-      font-size: 14px;
-      border: 1px solid var(--border-hairline);
-      border-radius: var(--radius-sm);
-      color: var(--fg-primary);
-      background: var(--bg-surface);
-      outline: none;
-      transition: border-color 0.15s ease;
-      font-family: inherit;
-    }
-
-    .input-field:focus {
-      border-color: var(--p-green);
-      box-shadow: 0 0 0 2px rgba(0, 128, 96, 0.15);
-    }
-
-    /* Live DAG Barrier Pipeline Checklist */
-    .progress-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-
-    .progress-bar-track {
-      width: 100%;
-      height: 8px;
-      background-color: #ebeef0;
-      border-radius: var(--radius-full);
       overflow: hidden;
-      margin-bottom: 18px;
-    }
-
-    .progress-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--p-green) 0%, #00a87e 100%);
-      width: 78%;
-      border-radius: var(--radius-full);
-      transition: width 0.4s ease;
-    }
-
-    .stages-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 10px;
-    }
-
-    .stage-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      border: 1px solid transparent;
-    }
-
-    .stage-item.tint-emerald {
-      background: var(--tint-emerald-bg);
-      border-color: var(--tint-emerald-border);
-      color: var(--tint-emerald-text);
-    }
-
-    .stage-item.tint-sky {
-      background: var(--tint-sky-bg);
-      border-color: var(--tint-sky-border);
-      color: var(--tint-sky-text);
-    }
-
-    .stage-item.tint-lavender {
-      background: var(--tint-lavender-bg);
-      border-color: var(--tint-lavender-border);
-      color: var(--tint-lavender-text);
-    }
-
-    .stage-item.running {
-      background: #ffffff;
-      border-color: var(--brand-tinta);
-      box-shadow: 0 0 0 1px var(--brand-tinta);
-    }
-
-    .stage-title {
-      font-family: 'Archivo', sans-serif;
-      font-weight: 600;
-      color: var(--fg-primary);
-    }
-
-    .stage-sub {
-      font-size: 11px;
-      color: var(--fg-secondary);
-      margin-top: 2px;
-    }
-
-    /* Pricing Section (Transparent & High Conversion) */
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-top: 14px;
-    }
-
-    @media (max-width: 860px) {
-      .pricing-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .price-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-hairline);
-      border-radius: var(--radius-lg);
-      padding: 22px;
-      display: flex;
-      flex-direction: column;
       box-shadow: var(--shadow-card);
-      position: relative;
+      margin-bottom: 24px;
     }
 
-    .price-card.featured {
-      border: 2px solid var(--brand-tinta);
-      box-shadow: var(--shadow-raised);
-    }
-
-    .featured-tag {
-      position: absolute;
-      top: -11px;
-      right: 18px;
-      background: var(--brand-lime);
-      color: var(--brand-tinta);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10.5px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 4px;
-      letter-spacing: 0.04em;
-    }
-
-    .price-plan-name {
-      font-family: 'Archivo', sans-serif;
-      font-size: 17px;
-      font-weight: 700;
-      color: var(--fg-primary);
-    }
-
-    .price-amount {
-      font-family: 'Anton', sans-serif;
-      font-size: 38px;
-      color: var(--fg-primary);
-      margin: 10px 0 4px;
-      line-height: 1;
-    }
-
-    .price-sub {
-      font-size: 12px;
-      color: var(--fg-secondary);
-      margin-bottom: 18px;
-    }
-
-    .price-features {
-      list-style: none;
-      font-size: 13px;
-      color: var(--fg-secondary);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 22px;
-      flex-grow: 1;
-    }
-
-    .price-features li {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .price-features strong {
-      color: var(--fg-primary);
-    }
-
-    /* Parity Table */
     .parity-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13.5px;
-      margin-top: 12px;
+      font-size: 13px;
     }
 
     .parity-table th {
       text-align: left;
-      padding: 10px 14px;
+      padding: 11px 16px;
       background: var(--bg-subtle);
       border-bottom: 1px solid var(--border-hairline);
       color: var(--fg-muted);
       font-family: 'JetBrains Mono', monospace;
       font-weight: 600;
-      font-size: 11.5px;
+      font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
     .parity-table td {
-      padding: 13px 14px;
+      padding: 14px 16px;
       border-bottom: 1px solid var(--border-hairline);
       vertical-align: middle;
     }
@@ -822,6 +714,149 @@
       color: var(--tint-emerald-text);
       border: 1px solid var(--tint-emerald-border);
     }
+
+    .badge-pill.amber {
+      background: var(--tint-amber-bg);
+      color: var(--tint-amber-text);
+      border: 1px solid var(--tint-amber-border);
+    }
+
+    /* Progress & Execution Controls */
+    .progress-section {
+      padding: 20px 24px;
+      background: var(--bg-subtle);
+      border-top: 1px solid var(--border-hairline);
+    }
+
+    .progress-track {
+      height: 10px;
+      background: #e5e7eb;
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #059669);
+      border-radius: var(--radius-full);
+      transition: width 0.4s ease;
+    }
+
+    .stage-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--fg-secondary);
+      margin-bottom: 18px;
+    }
+
+    /* Backups View (Duplify Style) */
+    .backups-hero-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 48px 24px;
+      text-align: center;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 20px;
+    }
+
+    .backups-hero-icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 16px;
+      background: #fff7ed;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ea580c;
+    }
+
+    /* Pricing Plans Card */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .plan-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .plan-card.featured {
+      border: 2px solid var(--p-green);
+    }
+    .plan-badge {
+      position: absolute;
+      top: -12px;
+      right: 18px;
+      background: var(--p-green);
+      color: #ffffff;
+      padding: 2px 10px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .plan-price {
+      font-family: 'Archivo', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--fg-primary);
+      margin: 12px 0 6px;
+    }
+
+    .plan-desc {
+      font-size: 13px;
+      color: var(--fg-secondary);
+      margin-bottom: 20px;
+    }
+
+    .plan-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+      flex: 1;
+    }
+    .plan-features li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--fg-primary);
+    }
+
+    /* Toast Notification */
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1a1a1a;
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 9999;
+    }
   </style>
 </head>
 <body>
@@ -829,495 +864,564 @@
   <div class="app-shell">
     
     <!-- Top Shopify App Header -->
-    <header class="top-bar">
+    <header class="top-header">
       <div class="brand-group">
         <div class="logo-badge">C</div>
         <div>
-          <div class="brand-title">
-            Clonix
-            <span style="font-family:'JetBrains Mono', monospace; font-size:11px; background:var(--brand-lime); color:var(--brand-tinta); padding:1px 6px; border-radius:4px;">Pro Engine</span>
+          <h1 class="page-title" id="page-heading">
+            Clonix Pro
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11px; background:var(--brand-lime); color:var(--brand-tinta); padding:2px 7px; border-radius:4px;">
+              Zero-404 Engine
+            </span>
+          </h1>
+          <div style="font-size: 12px; color: var(--fg-secondary); margin-top: 1px;">
+            Shopify Store Duplicator &amp; Automated Vault Migration
           </div>
-          <div style="font-size:12px; color:var(--fg-secondary);">Shopify Store Cloner &amp; Automated Vault</div>
         </div>
       </div>
       
       <div class="top-actions">
-        <div class="store-connection-pill">
-          <div class="status-dot-pulse">
-            <div class="ring"></div>
-            <div class="core"></div>
-          </div>
+        <div class="store-pill">
+          <div class="status-pulse"></div>
           <span>Active: <strong>ph0igg-jv.myshopify.com</strong></span>
         </div>
-        <button class="btn btn-secondary" onclick="switchMainTab('pricing')">Plans &amp; Pricing</button>
+        <button class="btn btn-secondary" onclick="switchTab('pricing')">Billing ($9 / $49)</button>
+        <button class="btn btn-primary" onclick="resetToNewConnection()">+ New connection</button>
       </div>
     </header>
 
-    <!-- Top Notice Banner -->
-    <div class="notice-banner">
-      <div class="notice-text">
-        <span class="badge-lime">100% FREE AUDIT</span>&nbsp;
-        <strong>Pre-Flight Parity Check:</strong> Crawl your store for custom liquid templates (<code>newmedda</code>, <code>newqabz</code>), metafields, and CDN links with zero commitments.
+    <!-- Review Rating Feedback Banner (Duplify Style) -->
+    <div class="feedback-banner">
+      <div class="feedback-left">
+        <div class="feedback-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        </div>
+        <div class="feedback-text">
+          <strong>Clonix was built to make store duplication seamless, fast, and zero-error.</strong>
+          How would you rate your experience so far?
+        </div>
       </div>
-      <button class="btn btn-secondary" onclick="runSimulation()">Run Free Health Audit</button>
+      <div class="stars-group">
+        <div class="stars-row">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        </div>
+        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;" onclick="showToast('Thank you for rating Clonix!')">Send</button>
+      </div>
     </div>
 
     <!-- Navigation Tabs -->
-    <nav class="tab-bar">
-      <button class="tab-btn active" id="tab-cloner" onclick="switchMainTab('cloner')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-        Store Cloner &amp; Handshake
+    <nav class="main-nav">
+      <button class="nav-tab active" id="tab-connect" onclick="switchTab('connect')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        Connect stores
       </button>
-      <button class="tab-btn" id="tab-vault" onclick="switchMainTab('vault')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-        Offline Vault Backup (ZIP)
+      <button class="nav-tab" id="tab-backups" onclick="switchTab('backups')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        Backups
       </button>
-      <button class="tab-btn" id="tab-pricing" onclick="switchMainTab('pricing')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 18V6"></path></svg>
-        Pricing &amp; Plans ($9 / $49)
+      <button class="nav-tab" id="tab-pricing" onclick="switchTab('pricing')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 18V6"></path></svg>
+        Plans &amp; Pricing ($0 / $9 / $49)
       </button>
     </nav>
 
-    <!-- TAB 1: CLONER & ROLE SELECTION -->
-    <div id="view-cloner">
+    <!-- VIEW 1: CONNECT STORES (HYBRID: DUPLIFY SIMPLICITY + CLONIX RESOLUTION) -->
+    <div id="view-connect">
       
-      <!-- Role Selection Section (Clean, Native Shopify Feel) -->
-      <div style="margin-bottom: 20px;">
-        <h2 class="section-title">Select Store Role</h2>
-        <p class="section-subtitle">Choose whether this current store is sending data or receiving data.</p>
-        
+      <!-- Review-Driven Guarantees (The Competitive Moat) -->
+      <div class="guarantees-grid">
+        <div class="guarantee-box">
+          <div class="guarantee-tag green">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            No Spreadsheets
+          </div>
+          <div class="guarantee-text">No Excel columns, formulas or broken CSV headers. Direct 1-click store sync.</div>
+        </div>
+        <div class="guarantee-box">
+          <div class="guarantee-tag purple">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Zero-404 Rewriter
+          </div>
+          <div class="guarantee-text">Themes, internal links, and assets are rewritten so new store has zero broken links.</div>
+        </div>
+        <div class="guarantee-box">
+          <div class="guarantee-tag blue">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Unlimited Scale
+          </div>
+          <div class="guarantee-text">No 3,000 product trap. R2 bulk pipeline scales effortlessly from 10 to 50,000+ items.</div>
+        </div>
+        <div class="guarantee-box">
+          <div class="guarantee-tag amber">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Free Retry Guarantee
+          </div>
+          <div class="guarantee-text">You only pay for a clone that works. Failed early? Pass auto-unlocks for instant retry.</div>
+        </div>
+      </div>
+
+      <!-- Main Role Selection Box (Duplify Simplicity) -->
+      <div class="card-container">
+        <div class="container-title">Select how you'll use Clonix in this store:</div>
+
         <div class="role-grid">
           
-          <!-- Source Store Card -->
-          <div class="role-card selected" id="card-source" onclick="selectRole('source')">
-            <div class="role-radio-wrap">
-              <span class="role-badge green">Origin</span>
-              <div class="role-radio-circle"></div>
-            </div>
-            
-            <div class="role-icon-box source">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
+          <!-- Source Store (Export Data) -->
+          <div class="role-box active-source" id="role-source" onclick="selectRole('source')">
+            <div class="radio-circle"></div>
+            <div class="role-icon">
+              <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+                <rect x="6" y="10" width="52" height="42" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2.5"/>
+                <rect x="6" y="10" width="52" height="12" rx="6" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2.5"/>
+                <circle cx="14" cy="16" r="2" fill="#9ca3af"/>
+                <circle cx="20" cy="16" r="2" fill="#9ca3af"/>
+                <circle cx="26" cy="16" r="2" fill="#9ca3af"/>
+                <path d="M32 26v20m0 0l-7-7m7 7l7-7" stroke="#008060" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
-            
-            <div class="role-name">Source Store (Export &amp; Send)</div>
-            <p class="role-desc">Export catalog, liquid themes, and settings to another store or save an encrypted offline vault.</p>
-            
-            <ul class="role-features">
-              <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> 100% Free ($0) for Source Store</li>
-              <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Generates secure Crockford Pairing Key</li>
+            <div class="role-name">Source store (export data)</div>
+            <div style="font-size: 12px; color: var(--fg-secondary);">Send catalog, liquid themes &amp; settings ($0 Free forever)</div>
+          </div>
+
+          <!-- Destination Store (Import Data) -->
+          <div class="role-box" id="role-dest" onclick="selectRole('dest')">
+            <div class="radio-circle"></div>
+            <div class="role-icon">
+              <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+                <rect x="6" y="10" width="52" height="42" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2.5"/>
+                <rect x="6" y="10" width="52" height="12" rx="6" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2.5"/>
+                <circle cx="14" cy="16" r="2" fill="#9ca3af"/>
+                <circle cx="20" cy="16" r="2" fill="#9ca3af"/>
+                <circle cx="26" cy="16" r="2" fill="#9ca3af"/>
+                <path d="M32 46V26m0 0l-7 7m7-7l7 7" stroke="#7026b9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="role-name">Destination store (import data)</div>
+            <div style="font-size: 12px; color: var(--fg-secondary);">Receive cloned catalog with zero-404 verification</div>
+          </div>
+
+        </div>
+
+        <!-- Dynamic Role Step Details (Source Mode View) -->
+        <div class="role-details-panel" id="panel-source-mode">
+          <div>
+            <ul class="steps-list">
+              <li>
+                <span class="step-num">1</span>
+                <span>Install Clonix on your destination store. If you don't have one, <a href="https://shopify.com" target="_blank" style="color:var(--p-green); font-weight:600;">create a new store</a>.</span>
+              </li>
+              <li>
+                <span class="step-num">2</span>
+                <span>In the destination store's Clonix app, copy the unique <strong>Store Key</strong>.</span>
+              </li>
+              <li>
+                <span class="step-num">3</span>
+                <span>Paste the key on the right to securely link the two stores.</span>
+              </li>
             </ul>
           </div>
 
-          <!-- Destination Store Card -->
-          <div class="role-card" id="card-dest" onclick="selectRole('dest')">
-            <div class="role-radio-wrap">
-              <span class="role-badge purple">Target</span>
-              <div class="role-radio-circle"></div>
+          <div class="key-action-wrap">
+            <label class="key-label">Destination store's key</label>
+            <div class="key-input-row">
+              <input type="text" class="key-input" id="dest-key-input" placeholder="e.g. JBW7-X3VR-E9RA" value="JBW7-X3VR-E9RA">
+              <button class="btn btn-green" onclick="connectAndInspect()">Connect &amp; Audit</button>
             </div>
-            
-            <div class="role-icon-box dest">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
+            <div style="font-size: 11px; color: var(--fg-muted); margin-top: 6px;">
+              Single-use cryptographic handshake. Expires in 15 minutes.
             </div>
-            
-            <div class="role-name">Destination Store (Import &amp; Replicate)</div>
-            <p class="role-desc">Receive cloned products, variants, collections, templates, and metafields with Zero-Leak CDN guarantee.</p>
-            
-            <ul class="role-features">
-              <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6d28d9" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Preserves custom template suffixes (<code>newmedda</code>)</li>
-              <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6d28d9" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Dynamic rewrite to Destination CDN</li>
+          </div>
+        </div>
+
+        <!-- Dynamic Role Step Details (Destination Mode View) -->
+        <div class="role-details-panel" id="panel-dest-mode" style="display: none;">
+          <div>
+            <ul class="steps-list">
+              <li>
+                <span class="step-num">1</span>
+                <span>Install Clonix on your source store (the store you want to copy from).</span>
+              </li>
+              <li>
+                <span class="step-num">2</span>
+                <span>Copy <strong>This Store's Key</strong> shown on the right.</span>
+              </li>
+              <li>
+                <span class="step-num">3</span>
+                <span>Go to your source store's Clonix app and paste this key there to start the transfer.</span>
+              </li>
             </ul>
           </div>
 
+          <div class="key-action-wrap">
+            <label class="key-label">This store's unique pairing key</label>
+            <div class="key-input-row">
+              <input type="text" class="key-input" id="this-store-key" value="K9X2-W7MP-3Y8B" readonly>
+              <button class="btn btn-secondary" onclick="copyThisKey()">Copy</button>
+            </div>
+            <div style="font-size: 11px; color: #059669; font-weight: 600; margin-top: 6px; display: flex; align-items: center; gap: 4px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
+              Ready to link &bull; 15-minute secure TTL active
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- VIDEO TUTORIAL BANNER (Duplify Style) -->
+      <div class="tutorial-card">
+        <div class="video-thumb" onclick="connectAndInspect()">
+          <div class="video-play-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            1:03 Demo
+          </div>
+        </div>
+        <div class="tutorial-content">
+          <div class="tutorial-title">Let's duplicate your first store together</div>
+          <div class="tutorial-desc">In this 1-minute video we show you how easy it is to clone your products, liquid themes, and settings with Zero 404s.</div>
+          <div class="tutorial-links">
+            <button class="btn btn-secondary" onclick="connectAndInspect()">Watch 1-Min Walkthrough</button>
+            <a href="#guide" class="link-guide" onclick="showToast('Opening quickstart guide...')">
+              View user guide
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </a>
+          </div>
         </div>
       </div>
 
-      <!-- Live Orbital Synchronization Canvas -->
-      <div class="orbital-sync-card">
-        <div class="orbital-header">
-          <div>
-            <div class="orbital-title">Direct Cloud Synchronization Stream</div>
-            <div class="orbital-subtitle">Zero-Leak CDN remapping • Template suffix preservation • 2-sided Crockford handshake</div>
+      <!-- ACTIVE PIPELINE: ORBITAL STREAM + PARITY VERIFICATION (Merged from V1) -->
+      <div id="active-pipeline-card" style="display: none;">
+        
+        <!-- Live Orbital Synchronization Canvas (From V1) -->
+        <div class="orbital-sync-card">
+          <div class="orbital-header">
+            <div>
+              <div class="orbital-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4ff00" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Direct Cloud Synchronization Stream
+              </div>
+              <div class="orbital-subtitle">Zero-Leak CDN remapping &bull; Template suffix preservation &bull; 2-sided Crockford handshake</div>
+            </div>
+            <div style="font-family:'JetBrains Mono', monospace; font-size:11.5px; background:rgba(212,255,0,0.15); color:var(--brand-lime); padding:4px 12px; border-radius:var(--radius-full); border:1px solid rgba(212,255,0,0.3);">
+              STAGE 11/14 ACTIVE
+            </div>
           </div>
-          <div style="font-family:'JetBrains Mono', monospace; font-size:11.5px; background:rgba(212,255,0,0.15); color:var(--brand-lime); padding:3px 10px; border-radius:var(--radius-full); border:1px solid rgba(212,255,0,0.3);">
-            STAGE 11/14 ACTIVE
+
+          <div class="orbital-canvas">
+            <!-- Node 1: Source -->
+            <div class="orbital-node">
+              <div class="node-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4ff00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                </svg>
+              </div>
+              <span class="node-label">Source Store</span>
+              <span class="node-sub">ph0igg-jv</span>
+            </div>
+
+            <!-- Node 2: Clonix Core -->
+            <div class="orbital-node">
+              <div class="node-box center-core">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#d4ff00" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+              </div>
+              <span class="node-label" style="color:var(--brand-lime);">Clonix DAG Core</span>
+              <span class="node-sub" style="color:#d4ff00;">14 Barriers</span>
+            </div>
+
+            <!-- Node 3: Destination -->
+            <div class="orbital-node">
+              <div class="node-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                </svg>
+              </div>
+              <span class="node-label">Destination</span>
+              <span class="node-sub">tibbeshifa-clone</span>
+            </div>
+
+            <!-- Animated SVG Rays -->
+            <svg class="orbital-svg-layer" viewBox="0 0 1000 110" preserveAspectRatio="none">
+              <path d="M 120 55 L 470 55" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2" stroke-dasharray="6 6" />
+              <circle r="4" fill="#d4ff00">
+                <animateMotion dur="1.8s" repeatCount="indefinite" path="M 120 55 L 470 55" />
+                <animate attributeName="opacity" dur="1.8s" repeatCount="indefinite" values="0;1;1;0" />
+              </circle>
+
+              <path d="M 530 55 L 880 55" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2" stroke-dasharray="6 6" />
+              <circle r="4" fill="#22c55e">
+                <animateMotion dur="1.8s" repeatCount="indefinite" path="M 530 55 L 880 55" />
+                <animate attributeName="opacity" dur="1.8s" repeatCount="indefinite" values="0;1;1;0" />
+              </circle>
+            </svg>
           </div>
         </div>
 
-        <div class="orbital-canvas">
-          <!-- Node 1 -->
-          <div class="orbital-node">
-            <div class="node-box">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4ff00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-              </svg>
+        <!-- Parity Verification Table (From V1) -->
+        <div class="parity-card">
+          <table class="parity-table">
+            <thead>
+              <tr>
+                <th>Resource Entity</th>
+                <th>Source Count</th>
+                <th>Target Parity</th>
+                <th>Zero-404 Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Products &amp; Variants</strong></td>
+                <td>142 items</td>
+                <td><span class="badge-pill success">&bull; Ready to duplicate</span></td>
+                <td><span style="font-family:'JetBrains Mono', monospace; font-size:12px; color:#059669;">100% Validated</span></td>
+              </tr>
+              <tr>
+                <td><strong>Custom Liquid Templates</strong></td>
+                <td><code>newmedda</code>, <code>newqabz</code></td>
+                <td><span class="badge-pill success">&bull; Suffix preserved</span></td>
+                <td><span style="font-family:'JetBrains Mono', monospace; font-size:12px; color:#059669;">Zero-404 Mapped</span></td>
+              </tr>
+              <tr>
+                <td><strong>Smart &amp; Custom Collections</strong></td>
+                <td>18 collections</td>
+                <td><span class="badge-pill success">&bull; Rules mapped</span></td>
+                <td><span style="font-family:'JetBrains Mono', monospace; font-size:12px; color:#059669;">No Missing Handles</span></td>
+              </tr>
+              <tr>
+                <td><strong>Files &amp; CDN Media</strong></td>
+                <td>250 assets</td>
+                <td><span class="badge-pill success">&bull; Staged in R2</span></td>
+                <td><span style="font-family:'JetBrains Mono', monospace; font-size:12px; color:#059669;">Zero Leak Guaranteed</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Progress Controls -->
+          <div class="progress-section">
+            <div class="progress-track">
+              <div class="progress-fill" id="run-progress-fill"></div>
             </div>
-            <span class="node-label">Source Store</span>
-            <span class="node-sub">ph0igg-jv</span>
-          </div>
-
-          <!-- Center Core -->
-          <div class="orbital-node">
-            <div class="node-box center-core">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d4ff00" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-              </svg>
+            
+            <div class="stage-status-bar">
+              <span id="stage-desc-text">Stage: Awaiting confirmation...</span>
+              <span id="stage-percent-text">0%</span>
             </div>
-            <span class="node-label" style="color:var(--brand-lime);">Clonix DAG Core</span>
-            <span class="node-sub" style="color:#d4ff00;">14 Barriers</span>
-          </div>
 
-          <!-- Node 2 -->
-          <div class="orbital-node">
-            <div class="node-box">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                <line x1="8" y1="21" x2="16" y2="21"></line>
-              </svg>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+              <button class="btn btn-secondary" onclick="resetToNewConnection()">Cancel</button>
+              <button class="btn btn-green" id="start-clone-btn" onclick="startCloningSimulation()">
+                Start Duplication (Zero-404 Guaranteed)
+              </button>
             </div>
-            <span class="node-label">Destination</span>
-            <span class="node-sub">tibbeshifa-clone</span>
           </div>
+        </div>
 
-          <!-- Animated SVG Rays -->
-          <svg class="orbital-svg-layer" viewBox="0 0 1000 110" preserveAspectRatio="none">
-            <path d="M 120 55 L 470 55" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2" stroke-dasharray="6 6" />
-            <circle r="4" fill="#d4ff00">
-              <animateMotion dur="1.8s" repeatCount="indefinite" path="M 120 55 L 470 55" />
-              <animate attributeName="opacity" dur="1.8s" repeatCount="indefinite" values="0;1;1;0" />
-            </circle>
+      </div>
 
-            <path d="M 530 55 L 880 55" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2" stroke-dasharray="6 6" />
-            <circle r="4" fill="#22c55e">
-              <animateMotion dur="1.8s" repeatCount="indefinite" path="M 530 55 L 880 55" />
-              <animate attributeName="opacity" dur="1.8s" repeatCount="indefinite" values="0;1;1;0" />
-            </circle>
+    </div>
+
+    <!-- VIEW 2: BACKUPS VIEW (DUPLIFY STYLE) -->
+    <div id="view-backups" style="display: none;">
+      
+      <div class="backups-hero-box">
+        <div class="backups-hero-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
           </svg>
         </div>
-      </div>
+        <h2 style="font-size: 20px; font-weight: 700; color: var(--fg-primary); margin-bottom: 6px;">Protect the essentials</h2>
+        <p style="font-size: 13.5px; color: var(--fg-secondary); max-width: 520px; margin: 0 auto 24px;">
+          Daily automated and manual vault backups of your products, liquid themes, metafields, and pages. Included with your Clonix plan.
+        </p>
 
-      <!-- Action Panel: Source View -->
-      <div class="workspace-card" id="source-panel">
-        <h3 class="section-title">Source Handshake Code</h3>
-        <p class="section-subtitle">Provide this 8-character code to your destination store to authorize direct transfer.</p>
-
-        <div class="code-box">
-          <div class="code-label">Consent Pairing Code</div>
-          <div class="code-string" id="pairingCode">7K9M-2PX4</div>
-          <div class="code-meta">
-            <span>🔒 Crockford Base32</span>
-            <span>⚡ 15-Minute Expiry</span>
-            <span>🛡️ 2-Sided Consent Required</span>
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 10px;">
-          <button class="btn btn-lime" onclick="copyCode()">Copy Code to Clipboard</button>
-          <button class="btn btn-secondary" onclick="generateNewCode()">Regenerate Code</button>
+        <div style="display: flex; justify-content: center; gap: 12px;">
+          <button class="btn btn-secondary" onclick="showToast('Connecting external store for backup...')">Backup a different store</button>
+          <button class="btn btn-primary" onclick="showToast('Creating instant AES-256 encrypted backup snapshot...')">Backup current store</button>
         </div>
       </div>
 
-      <!-- Action Panel: Destination View -->
-      <div class="workspace-card" id="dest-panel" style="display:none;">
-        <h3 class="section-title">Connect to Source Store</h3>
-        <p class="section-subtitle">Enter the 8-character pairing code from the source store to initiate transfer.</p>
-
-        <div style="max-width: 440px; margin: 18px 0;">
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Pairing Code</label>
-          <div style="display:flex; gap:10px;">
-            <input type="text" id="destInput" class="input-field" placeholder="e.g. 7K9M-2PX4" maxlength="9" style="font-family:'JetBrains Mono', monospace; font-size:16px; font-weight:700; text-transform:uppercase;">
-            <button class="btn btn-primary" onclick="startClone()">Authorize &amp; Clone</button>
-          </div>
-        </div>
-
-        <div style="font-size:12.5px; color:var(--fg-secondary);">
-          💡 <strong>Zero-Risk Guarantee:</strong> Preflight verifier checks templates, currencies, and metafields before writing any data.
-        </div>
-      </div>
-
-      <!-- Live 14-Stage DAG Barrier Execution Tracker -->
-      <div class="workspace-card">
-        <div class="progress-header">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <h3 class="section-title" style="margin:0;">14-Stage DAG Barrier Execution</h3>
-            <span class="badge-pill success" id="liveBadge">Running Stage 11 (Theme &amp; Liquid)</span>
-          </div>
-          <div style="font-family:'Anton', sans-serif; font-size:18px; color:var(--p-green);" id="progressPercent">78% COMPLETED</div>
-        </div>
-
-        <div class="progress-bar-track">
-          <div class="progress-bar-fill" id="progressBar"></div>
-        </div>
-
-        <div class="stages-grid">
-          <div class="stage-item tint-emerald">
-            <div>
-              <div class="stage-title">Stage 0: Preflight &amp; Probe</div>
-              <div class="stage-sub">Currency, theme existence probed</div>
-            </div>
-          </div>
-
-          <div class="stage-item tint-sky">
-            <div>
-              <div class="stage-title">Stage 2: Files &amp; Media Ingestion</div>
-              <div class="stage-sub">523 images uploaded to dest CDN</div>
-            </div>
-          </div>
-
-          <div class="stage-item tint-sky">
-            <div>
-              <div class="stage-title">Stage 5: Products &amp; Variants</div>
-              <div class="stage-sub">7 products, Urdu titles, SKUs</div>
-            </div>
-          </div>
-
-          <div class="stage-item tint-lavender">
-            <div>
-              <div class="stage-title">Stage 6: Inventory Tracking</div>
-              <div class="stage-sub">Stock levels (97-99) tracked: True</div>
-            </div>
-          </div>
-
-          <div class="stage-item tint-lavender">
-            <div>
-              <div class="stage-title">Stage 7: Collections</div>
-              <div class="stage-sub">7 smart collections &amp; rules</div>
-            </div>
-          </div>
-
-          <div class="stage-item running">
-            <div>
-              <div class="stage-title">Stage 11: Theme &amp; Liquid</div>
-              <div class="stage-sub">Rewriting {% schema %} CDN URLs...</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Parity Table -->
-      <div class="workspace-card">
-        <h3 class="section-title">Live Parity &amp; Zero-404 Score Card</h3>
-        <p class="section-subtitle">Real-time side-by-side audit comparing source and destination store assets.</p>
-
-        <table class="parity-table">
-          <thead>
-            <tr>
-              <th>Store Asset</th>
-              <th>Source Count</th>
-              <th>Destination Status</th>
-              <th>Parity Result</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Products &amp; Urdu Titles</strong></td>
-              <td>7 Products</td>
-              <td>7 Created</td>
-              <td><span class="badge-pill success">✅ 100% Match</span></td>
-            </tr>
-            <tr>
-              <td><strong>Custom Template Suffixes</strong></td>
-              <td><code>newmedda</code>, <code>newqabz</code></td>
-              <td>Preserved</td>
-              <td><span class="badge-pill success">✅ Zero-404 Guard</span></td>
-            </tr>
-            <tr>
-              <td><strong>Inventory Stock &amp; Tracking</strong></td>
-              <td>97, 98, 99 In Stock</td>
-              <td>Tracked: True</td>
-              <td><span class="badge-pill success">✅ Synced</span></td>
-            </tr>
-            <tr>
-              <td><strong>Zero-Leak CDN Images</strong></td>
-              <td>523 Images</td>
-              <td>0 Leaks Found</td>
-              <td><span class="badge-pill success">✅ Destination CDN</span></td>
-            </tr>
-          </tbody>
-        </table>
+      <div style="text-align: center; font-size: 12px; color: var(--fg-muted);">
+        Backups are kept for 6 months, or 30 days after plan cancellation. Stored securely on private Cloudflare R2 vaults.
       </div>
 
     </div>
 
-    <!-- TAB 2: OFFLINE VAULT BACKUP (ZIP) -->
-    <div id="view-vault" style="display:none;">
-      <div class="workspace-card">
-        <h3 class="section-title">Offline Vault Backups</h3>
-        <p class="section-subtitle">1-click compressed disaster recovery ZIP snapshots containing themes, JSON catalogs, and metafields.</p>
-
-        <div style="background:var(--bg-subtle); border:1px solid var(--border-hairline); border-radius:var(--radius-md); padding:20px; display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-          <div style="display:flex; align-items:center; gap:14px;">
-            <div style="width:42px; height:42px; border-radius:8px; background:#eff6ff; display:flex; align-items:center; justify-content:center; color:#2563eb;">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </div>
-            <div>
-              <div style="font-weight:700; font-size:14px;">TibbeShifa-Old-Store-Complete-Backup-2026-10-17.zip</div>
-              <div style="font-size:12px; color:var(--fg-secondary);">1.78 MB • Highly Compressed • Includes Themes, Products, Metafields</div>
-            </div>
-          </div>
-          <button class="btn btn-secondary" onclick="alert('Downloading offline vault archive...')">Download ZIP</button>
-        </div>
-
-        <button class="btn btn-primary" onclick="alert('Generating fresh automated vault snapshot...')">Create New Snapshot Now</button>
-      </div>
-    </div>
-
-    <!-- TAB 3: PRICING & PLANS (High Converting Model) -->
-    <div id="view-pricing" style="display:none;">
-      <div style="text-align:center; margin-bottom:24px;">
-        <h2 class="section-title" style="font-size:24px;">Transparent &amp; Fair Pricing</h2>
-        <p class="section-subtitle">No recurring trap for 1-time store duplications. Pick the plan that fits you.</p>
+    <!-- VIEW 3: PLANS & PRICING -->
+    <div id="view-pricing" style="display: none;">
+      
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h2 style="font-size: 22px; font-weight: 700; color: var(--fg-primary);">Transparent, fair pricing. No traps.</h2>
+        <p style="font-size: 13px; color: var(--fg-secondary); margin-top: 4px;">
+          Unlike competitors who charge $79/mo for 50 products or force you to pay twice, you only pay for clones that work.
+        </p>
       </div>
 
       <div class="pricing-grid">
         
-        <!-- Tier 1: Freemium -->
-        <div class="price-card">
-          <div class="price-plan-name">Freemium Audit</div>
-          <div class="price-amount">$0</div>
-          <div class="price-sub">Forever free for small stores &amp; audits</div>
-
-          <ul class="price-features">
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Up to <strong>12 Products &amp; 1 Collection</strong></li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Full Health &amp; Parity Audit</strong> (Any Size)</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Active Theme Liquid Copy</li>
+        <!-- Tier 1: Free Sandbox -->
+        <div class="plan-card">
+          <div style="font-size: 16px; font-weight: 700;">Free Sandbox</div>
+          <div class="plan-price">$0</div>
+          <div class="plan-desc">Test real store-to-store cloning on small catalogs before paying a single dollar.</div>
+          
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Up to 12 Products</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> 1 Collection &amp; 3 Pages</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Zero-404 Link Rewriting</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Preflight Health Audit</li>
           </ul>
 
-          <button class="btn btn-secondary" onclick="switchMainTab('cloner')">Current Plan</button>
+          <button class="btn btn-secondary" onclick="showToast('Free Sandbox active by default!')">Current Plan</button>
         </div>
 
-        <!-- Tier 2: Single Clone Pass (Featured) -->
-        <div class="price-card featured">
-          <span class="featured-tag">MOST POPULAR</span>
-          <div class="price-plan-name">Single Clone Pass</div>
-          <div class="price-amount">$9</div>
-          <div class="price-sub">One-time fee per destination store</div>
-
-          <ul class="price-features">
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Unlimited Products</strong> &amp; Collections</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Zero-Leak CDN</strong> Asset Remapping</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Template Suffix Guard</strong> (Zero-404)</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Billed only to Destination Store</li>
+        <!-- Tier 2: Clone Pass (Featured) -->
+        <div class="plan-card featured">
+          <span class="plan-badge">MOST POPULAR</span>
+          <div style="font-size: 16px; font-weight: 700;">Clone Pass</div>
+          <div class="plan-price">$9 <span style="font-size: 14px; font-weight: 500; color: var(--fg-muted);">one-time</span></div>
+          <div class="plan-desc">Complete store clone for single migrations. Pay once, done. No monthly subscription.</div>
+          
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Unlimited Products</strong> (No 3k limit)</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Full Theme &amp; Liquid Assets</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Metaobjects &amp; Custom Fields</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Free Auto-Retry Guarantee</strong></li>
           </ul>
 
-          <button class="btn btn-lime" onclick="alert('Initiating Shopify Billing One-Time Pass ($9)...')">Get Single Pass ($9)</button>
+          <button class="btn btn-green" onclick="showToast('Opening Shopify 1-Time Purchase Approval ($9)...')">Purchase Clone Pass</button>
         </div>
 
-        <!-- Tier 3: Unlimited Monthly Agency Plan -->
-        <div class="price-card">
-          <div class="price-plan-name">Unlimited Pro</div>
-          <div class="price-amount">$49 <span style="font-size:16px; font-family:'Geist', sans-serif; font-weight:400; color:var(--fg-secondary);">/ mo</span></div>
-          <div class="price-sub">For agencies, dropshippers &amp; multi-brands</div>
-
-          <ul class="price-features">
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Unlimited Store Duplications</strong></li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Automated Daily Vault Backups</strong></li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Master Agency Pairing Key</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Priority Discord &amp; Developer Support</li>
+        <!-- Tier 3: Agency Hub -->
+        <div class="plan-card">
+          <div style="font-size: 16px; font-weight: 700;">Agency Hub</div>
+          <div class="plan-price">$49 <span style="font-size: 14px; font-weight: 500; color: var(--fg-muted);">/ month</span></div>
+          <div class="plan-desc">For web agencies &amp; multisite merchants duplicating stores into client accounts.</div>
+          
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <strong>Unlimited Destination Stores</strong></li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Clients install for $0 free</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Priority R2 High-Speed Workers</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008060" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Agency Token Handshake</li>
           </ul>
 
-          <button class="btn btn-primary" onclick="alert('Initiating Shopify Recurring Subscription ($49/mo)...')">Start Unlimited ($49/mo)</button>
+          <button class="btn btn-primary" onclick="showToast('Starting 30-Day Agency Subscription ($49)...')">Subscribe Agency Hub</button>
         </div>
 
       </div>
+
     </div>
 
   </div>
 
+  <!-- Interactive Toast Notification -->
+  <div class="toast-msg" id="toast-el">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span id="toast-text">Action completed successfully</span>
+  </div>
+
   <script>
+    function switchTab(tab) {
+      document.getElementById('view-connect').style.display = tab === 'connect' ? 'block' : 'none';
+      document.getElementById('view-backups').style.display = tab === 'backups' ? 'block' : 'none';
+      document.getElementById('view-pricing').style.display = tab === 'pricing' ? 'block' : 'none';
+
+      document.getElementById('tab-connect').classList.toggle('active', tab === 'connect');
+      document.getElementById('tab-backups').classList.toggle('active', tab === 'backups');
+      document.getElementById('tab-pricing').classList.toggle('active', tab === 'pricing');
+    }
+
     function selectRole(role) {
-      const cardSource = document.getElementById('card-source');
-      const cardDest = document.getElementById('card-dest');
-      const sourcePanel = document.getElementById('source-panel');
-      const destPanel = document.getElementById('dest-panel');
+      const sourceBox = document.getElementById('role-source');
+      const destBox = document.getElementById('role-dest');
+      const sourcePanel = document.getElementById('panel-source-mode');
+      const destPanel = document.getElementById('panel-dest-mode');
 
       if (role === 'source') {
-        cardSource.classList.add('selected');
-        cardDest.classList.remove('selected');
-        sourcePanel.style.display = 'block';
+        sourceBox.className = 'role-box active-source';
+        destBox.className = 'role-box';
+        sourcePanel.style.display = 'grid';
         destPanel.style.display = 'none';
       } else {
-        cardDest.classList.add('selected');
-        cardSource.classList.remove('selected');
-        destPanel.style.display = 'block';
+        sourceBox.className = 'role-box';
+        destBox.className = 'role-box active-dest';
         sourcePanel.style.display = 'none';
+        destPanel.style.display = 'grid';
       }
     }
 
-    function switchMainTab(tabName) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.getElementById('view-cloner').style.display = 'none';
-      document.getElementById('view-vault').style.display = 'none';
-      document.getElementById('view-pricing').style.display = 'none';
-
-      if (tabName === 'cloner') {
-        document.getElementById('tab-cloner').classList.add('active');
-        document.getElementById('view-cloner').style.display = 'block';
-      } else if (tabName === 'vault') {
-        document.getElementById('tab-vault').classList.add('active');
-        document.getElementById('view-vault').style.display = 'block';
-      } else if (tabName === 'pricing') {
-        document.getElementById('tab-pricing').classList.add('active');
-        document.getElementById('view-pricing').style.display = 'block';
-      }
+    function copyThisKey() {
+      const input = document.getElementById('this-store-key');
+      input.select();
+      navigator.clipboard.writeText(input.value);
+      showToast('Copied key to clipboard: ' + input.value);
     }
 
-    function copyCode() {
-      const code = document.getElementById("pairingCode").innerText;
-      navigator.clipboard.writeText(code);
-      alert("Pairing code copied to clipboard: " + code);
+    function connectAndInspect() {
+      const pipelineCard = document.getElementById('active-pipeline-card');
+      pipelineCard.style.display = 'block';
+      pipelineCard.scrollIntoView({ behavior: 'smooth' });
+      showToast('Handshake verified: Preflight audit ready!');
     }
 
-    function generateNewCode() {
-      const chars = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-      let res = "";
-      for (let i = 0; i < 8; i++) {
-        if (i === 4) res += "-";
-        res += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      document.getElementById("pairingCode").innerText = res;
+    function resetToNewConnection() {
+      document.getElementById('active-pipeline-card').style.display = 'none';
+      document.getElementById('run-progress-fill').style.width = '0%';
+      document.getElementById('stage-desc-text').innerText = 'Stage: Awaiting confirmation...';
+      document.getElementById('stage-percent-text').innerText = '0%';
+      const btn = document.getElementById('start-clone-btn');
+      btn.disabled = false;
+      btn.innerText = 'Start Duplication (Zero-404 Guaranteed)';
+      showToast('Reset connection wizard');
     }
 
-    function startClone() {
-      const val = document.getElementById("destInput").value.trim();
-      if (!val) {
-        alert("Please enter the 8-character pairing code from the source store.");
-        return;
-      }
-      alert("Handshake authorized for " + val + "! Migration starting with zero-leak CDN...");
-      runSimulation();
-    }
-
-    function runSimulation() {
-      let pct = 15;
-      const bar = document.getElementById("progressBar");
-      const label = document.getElementById("progressPercent");
-      const badge = document.getElementById("liveBadge");
+    function startCloningSimulation() {
+      const fill = document.getElementById('run-progress-fill');
+      const desc = document.getElementById('stage-desc-text');
+      const pct = document.getElementById('stage-percent-text');
+      const btn = document.getElementById('start-clone-btn');
       
-      const timer = setInterval(() => {
-        pct += 15;
-        if (pct >= 100) {
-          pct = 100;
-          clearInterval(timer);
-          bar.style.width = "100%";
-          label.innerText = "100% COMPLETED";
-          badge.innerText = "Storefront Verified ✅ (0 Leaks, Zero 404s)";
-          badge.className = "badge-pill success";
-        } else {
-          bar.style.width = pct + "%";
-          label.innerText = pct + "% COMPLETED";
-          badge.innerText = "Running Stage " + Math.floor(pct / 8) + "/14";
+      btn.disabled = true;
+      btn.innerText = 'Duplicating in Progress...';
+
+      const stages = [
+        { pct: 15, text: 'Stage 0: Extracting source catalog & probe...' },
+        { pct: 35, text: 'Stage 2: Uploading 250 CDN files to Cloudflare R2...' },
+        { pct: 60, text: 'Stage 5: Creating 142 products & variants...' },
+        { pct: 85, text: 'Stage 11: Rewriting liquid theme & zero-404 URLs...' },
+        { pct: 100, text: 'Stage 13: Parity verification complete! Store duplicated cleanly.' }
+      ];
+
+      let idx = 0;
+      const interval = setInterval(() => {
+        if (idx >= stages.length) {
+          clearInterval(interval);
+          btn.innerText = 'Clone Finished (100% Parity)';
+          btn.style.background = '#047857';
+          showToast('Store duplication finished with 0 errors!');
+          return;
         }
-      }, 350);
+        fill.style.width = stages[idx].pct + '%';
+        pct.innerText = stages[idx].pct + '%';
+        desc.innerText = stages[idx].text;
+        idx++;
+      }, 900);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-el');
+      document.getElementById('toast-text').innerText = msg;
+      toast.style.display = 'inline-flex';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 3200);
     }
   </script>
+
 </body>
 </html>

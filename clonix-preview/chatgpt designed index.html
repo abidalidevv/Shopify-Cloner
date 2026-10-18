@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7f7">
+  <title>Clonix — Store Duplicator & Vault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --lime: #d4ff00;
+      --ink: #17191b;
+      --ink-soft: #41464b;
+      --muted: #6e747a;
+      --muted-2: #92989d;
+      --canvas: #f4f5f5;
+      --surface: #fff;
+      --subtle: #f8f9f9;
+      --line: #e1e4e6;
+      --line-strong: #cbd0d3;
+      --green: #008060;
+      --green-dark: #006e52;
+      --green-pale: #e9f8f1;
+      --amber: #9a5b00;
+      --amber-pale: #fff7e6;
+      --red: #b42318;
+      --red-pale: #fff1f0;
+      --radius: 10px;
+      --radius-lg: 14px;
+      --shadow: 0 1px 2px rgba(16,24,40,.035), 0 2px 4px rgba(16,24,40,.025);
+      --shadow-lift: 0 8px 24px rgba(16,24,40,.07);
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); font: 14px/1.5 'Geist', Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible { outline: 3px solid rgba(0,128,96,.2); outline-offset: 2px; }
+    a { color: inherit; }
+    .topbar { height: 68px; padding: 0 clamp(18px,4vw,54px); display:flex; align-items:center; justify-content:space-between; gap:18px; background: rgba(255,255,255,.92); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20; backdrop-filter: blur(12px); }
+    .brand { display:flex; align-items:center; gap:11px; min-width: 220px; }
+    .brand-mark { width:36px; height:36px; display:grid; place-items:center; background:var(--ink); color:var(--lime); border-radius:10px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+    .brand-mark svg { width:22px; height:22px; }
+    .brand-name { font:700 19px/1 'Archivo', sans-serif; letter-spacing:-.035em; }
+    .brand-sub { color:var(--muted); font-size:11px; margin-top:4px; }
+    .top-center { flex:1; max-width:480px; }
+    .store-pill { display:inline-flex; align-items:center; gap:9px; max-width:100%; border:1px solid var(--line); border-radius:999px; background:#fff; padding:8px 13px; color:var(--ink-soft); font-size:12px; box-shadow:var(--shadow); }
+    .store-pill span:last-child { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .dot { width:7px; height:7px; flex:0 0 7px; background:var(--green); border-radius:50%; box-shadow:0 0 0 3px rgba(0,128,96,.09); }
+    .top-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; min-width:220px; }
+    .icon-btn { display:grid; place-items:center; width:36px; height:36px; background:#fff; border:1px solid var(--line); border-radius:9px; color:var(--ink-soft); }
+    .avatar { display:grid; place-items:center; width:34px; height:34px; border-radius:50%; background:#202326; color:#fff; border:2px solid #e6e8e9; font-weight:700; font-size:11px; }
+    .profile { display:flex; align-items:center; gap:9px; padding-left:6px; }
+    .profile-name { font-weight:600; font-size:12px; }
+    .profile-plan { color:var(--muted); font-size:11px; margin-top:2px; }
+    .shell { max-width:1260px; margin:0 auto; padding:24px clamp(16px,3vw,34px) 56px; }
+    .page-nav { display:flex; align-items:center; gap:5px; border-bottom:1px solid var(--line); margin-bottom:24px; overflow-x:auto; scrollbar-width:thin; }
+    .nav-btn { display:flex; align-items:center; gap:8px; padding:11px 15px 12px; margin-bottom:-1px; background:transparent; border:0; border-bottom:2px solid transparent; color:var(--muted); font-weight:600; font-size:13px; white-space:nowrap; transition:color .15s ease,border-color .15s ease; }
+    .nav-btn svg { width:16px; height:16px; }
+    .nav-btn:hover { color:var(--ink); }
+    .nav-btn.active { color:var(--ink); border-bottom-color:var(--green); }
+    .nav-btn.active svg { color:var(--green); }
+    .page { display:none; animation: page-in .18s ease-out; }
+    .page.active { display:block; }
+    @keyframes page-in { from {opacity:0; transform:translateY(3px)} to {opacity:1; transform:translateY(0)} }
+    .page-head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin: 2px 0 20px; }
+    .eyebrow { color:var(--green); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:5px; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { font:700 clamp(24px,3vw,29px)/1.15 'Archivo', sans-serif; letter-spacing:-.04em; margin:0 0 7px; }
+    h2 { font:700 17px/1.25 'Archivo', sans-serif; letter-spacing:-.025em; margin:0; }
+    h3 { font:700 14px/1.3 'Geist', sans-serif; margin:0; }
+    .page-desc { color:var(--muted); margin:0; font-size:13px; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:36px; padding:8px 13px; border-radius:8px; border:1px solid var(--line-strong); background:#fff; color:var(--ink); font-size:12px; font-weight:600; box-shadow:0 1px 1px rgba(0,0,0,.02); transition:transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease; }
+    .btn:hover { background:#f7f8f8; border-color:#aeb5b9; }
+    .btn:active { transform:translateY(1px); }
+    .btn svg { width:15px; height:15px; }
+    .btn-dark { background:#202326; color:#fff; border-color:#202326; }
+    .btn-dark:hover { background:#303438; border-color:#303438; }
+    .btn-lime { background:var(--lime); color:#17191b; border-color:#c8ed00; box-shadow:0 1px 2px rgba(91,112,0,.13); }
+    .btn-lime:hover { background:#c9f200; border-color:#c9f200; }
+    .btn-green { background:var(--green); color:#fff; border-color:var(--green); }
+    .btn-green:hover { background:var(--green-dark); border-color:var(--green-dark); }
+    .btn-quiet { background:transparent; border-color:transparent; box-shadow:none; color:var(--muted); }
+    .btn-quiet:hover { background:#f1f3f3; color:var(--ink); }
+    .card { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow); }
+    .card-pad { padding:22px; }
+    .card-heading { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:6px; }
+    .muted { color:var(--muted); }
+    .small { font-size:12px; }
+    .micro { font-size:11px; }
+    .badge { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:6px; font-size:11px; line-height:1.2; font-weight:700; white-space:nowrap; }
+    .badge-green { color:#066448; background:var(--green-pale); border:1px solid #c6eadb; }
+    .badge-gray { color:#535a60; background:#f1f3f4; border:1px solid #e4e7e9; }
+    .badge-lime { color:#303900; background:#f3ffc1; border:1px solid #dff58a; }
+    .badge-amber { color:var(--amber); background:var(--amber-pale); border:1px solid #f7dfae; }
+    .section-label { font-size:11px; font-weight:700; letter-spacing:.065em; text-transform:uppercase; color:var(--muted-2); }
+
+    /* Connect stores: simple, clear, Deplify-inspired layout with Clonix identity */
+    .connect-card { padding:22px; }
+    .connect-intro { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:17px; }
+    .connect-intro .page-desc { margin-top:5px; }
+    .role-grid { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+    .role-card { position:relative; display:flex; align-items:center; gap:14px; width:100%; min-height:112px; padding:17px; text-align:left; background:#fff; border:1px solid var(--line); border-radius:11px; color:var(--ink); transition:border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+    .role-card:hover { border-color:#b3c0ba; box-shadow:var(--shadow); }
+    .role-card.selected { border:1.5px solid var(--green); background:#fbfefc; box-shadow:0 0 0 2px rgba(0,128,96,.06); }
+    .role-icon { width:48px; height:48px; flex:0 0 48px; display:grid; place-items:center; border-radius:10px; background:#f0f3f1; color:#4e5b54; }
+    .role-card.selected .role-icon { background:#e1f5eb; color:var(--green); }
+    .role-icon svg { width:24px; height:24px; }
+    .role-content { flex:1; min-width:0; }
+    .role-top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px; }
+    .role-title { font-size:14px; font-weight:700; }
+    .role-sub { color:var(--muted); font-size:12px; line-height:1.45; }
+    .radio { width:18px; height:18px; flex:0 0 18px; border:1.5px solid #aeb5b9; border-radius:50%; display:grid; place-items:center; }
+    .radio::after { content:''; width:8px; height:8px; background:transparent; border-radius:50%; }
+    .role-card.selected .radio { border-color:var(--green); }
+    .role-card.selected .radio::after { background:var(--green); }
+    .connection-details { margin-top:16px; padding:18px; border-radius:11px; background:#f7f8f8; border:1px solid #eceeef; display:grid; grid-template-columns:1fr minmax(300px,.92fr); gap:24px; align-items:center; }
+    .steps { display:flex; flex-direction:column; gap:13px; }
+    .step { display:flex; align-items:flex-start; gap:10px; color:var(--ink-soft); font-size:12px; line-height:1.5; }
+    .step-num { width:20px; height:20px; display:grid; place-items:center; flex:0 0 20px; border-radius:50%; background:#e4e7e8; color:#42474c; font-size:10px; font-weight:700; }
+    .step strong { color:var(--ink); font-weight:600; }
+    .code-panel { background:#fff; border:1px solid var(--line); border-radius:10px; padding:15px; min-width:0; }
+    .field-label { display:block; font-size:12px; font-weight:600; margin-bottom:7px; }
+    .code-row { display:flex; align-items:center; gap:7px; }
+    .code-value { min-width:0; flex:1; min-height:44px; display:flex; align-items:center; justify-content:center; border:1px solid #dfe3e5; border-radius:8px; background:#fcfdfd; font:700 20px/1 'JetBrains Mono', monospace; letter-spacing:.12em; color:#202326; white-space:nowrap; }
+    .copy-btn { min-height:44px; }
+    .code-foot { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:7px; margin-top:9px; color:var(--muted); font-size:11px; }
+    .timer { color:#444b4f; font-weight:700; font-variant-numeric:tabular-nums; }
+    .input-row { display:flex; gap:8px; }
+    .input { min-width:0; width:100%; height:42px; border:1px solid #cfd5d7; border-radius:8px; padding:0 12px; color:var(--ink); background:#fff; }
+    .input::placeholder { color:#9ba1a5; }
+    .input.mono { font:600 14px 'JetBrains Mono', monospace; letter-spacing:.08em; text-transform:uppercase; }
+    .help-link { border:0; padding:0; background:none; color:var(--green); text-decoration:underline; text-underline-offset:2px; font-size:11px; cursor:pointer; }
+    .content-foot { display:flex; align-items:center; gap:7px; margin-top:11px; font-size:11px; color:var(--muted); }
+    .content-foot svg { width:14px; height:14px; color:var(--green); flex:0 0 14px; }
+    .how-card { padding:18px 22px; margin-top:16px; }
+    .how-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-top:15px; }
+    .how-step { display:flex; gap:10px; align-items:flex-start; }
+    .how-icon { width:30px; height:30px; display:grid; place-items:center; border:1px solid var(--line); border-radius:8px; color:#454c50; background:#fff; flex:0 0 30px; }
+    .how-icon svg { width:15px; height:15px; }
+    .how-step strong { display:block; font-size:12px; margin:1px 0 3px; }
+    .how-step p { font-size:11px; color:var(--muted); margin:0; line-height:1.45; }
+    .resource-strip { display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-top:16px; }
+    .resource-pill { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:7px; padding:7px 10px; background:#fff; font-size:11px; color:#555d62; }
+    .resource-pill svg { width:13px; height:13px; color:#697178; }
+    .tiny-note { font-size:10px; color:var(--muted-2); margin-top:16px; }
+
+    /* Migration history */
+    .run-card { padding:22px; }
+    .run-main { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; }
+    .run-label { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:5px; }
+    .run-id { font:600 12px 'JetBrains Mono', monospace; color:#4d555a; }
+    .run-title { font:700 18px 'Archivo',sans-serif; letter-spacing:-.02em; margin:0 0 5px; }
+    .run-domain { font-size:12px; color:var(--muted); }
+    .progress-stats { text-align:right; min-width:120px; }
+    .progress-number { font:700 29px/1 'Archivo',sans-serif; letter-spacing:-.04em; }
+    .progress-track { height:8px; width:100%; overflow:hidden; border-radius:99px; background:#e8ebec; margin:19px 0 8px; }
+    .progress-fill { width:78%; height:100%; border-radius:99px; background:var(--green); transition:width .3s ease; }
+    .progress-caption { display:flex; justify-content:space-between; gap:12px; color:var(--muted); font-size:11px; }
+    .run-detail-grid { display:grid; grid-template-columns:1.1fr .9fr; gap:16px; margin-top:19px; }
+    .inner-panel { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+    .inner-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px 15px; background:#fbfcfc; border-bottom:1px solid var(--line); }
+    .inner-body { padding:14px; }
+    .stage-list { display:flex; flex-direction:column; gap:8px; }
+    .stage-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 10px; border:1px solid transparent; border-radius:8px; }
+    .stage-row.done { background:#f0faf5; }
+    .stage-row.current { border-color:#d4eddf; background:#fbfefc; }
+    .stage-left { display:flex; align-items:center; gap:9px; min-width:0; }
+    .stage-check { width:21px; height:21px; flex:0 0 21px; display:grid; place-items:center; border:1px solid var(--line-strong); border-radius:50%; color:#a0a7ab; background:#fff; }
+    .stage-row.done .stage-check { border-color:#b1dec9; color:var(--green); background:#e2f7eb; }
+    .stage-row.current .stage-check { border-color:#c5e7d3; color:var(--green); }
+    .stage-check svg { width:12px; height:12px; }
+    .stage-name { font-size:12px; font-weight:600; }
+    .stage-desc { font-size:10px; color:var(--muted); margin-top:2px; }
+    .table-wrap { overflow-x:auto; }
+    table { border-collapse:collapse; width:100%; min-width:500px; font-size:11px; }
+    th { padding:10px 12px; text-align:left; text-transform:uppercase; letter-spacing:.04em; font-size:9px; color:var(--muted); background:#fafbfb; border-bottom:1px solid var(--line); }
+    td { padding:12px; border-bottom:1px solid #edf0f1; color:#485055; }
+    tbody tr:last-child td { border-bottom:0; }
+    td strong { color:var(--ink); font-weight:600; }
+    .status-ok { color:var(--green); font-size:10px; font-weight:700; }
+    .run-actions { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+
+    /* Backup page */
+    .backup-hero { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:22px; margin-bottom:16px; }
+    .backup-copy { display:flex; align-items:center; gap:14px; }
+    .backup-illustration { width:52px; height:52px; flex:0 0 52px; display:grid; place-items:center; border-radius:12px; background:#eff8e0; color:#2a3b00; }
+    .backup-illustration svg { width:25px; height:25px; }
+    .backup-copy p { color:var(--muted); font-size:12px; margin:4px 0 0; }
+    .backup-list { overflow:hidden; }
+    .backup-row { display:grid; grid-template-columns:minmax(0,1.7fr) .6fr .55fr auto; gap:15px; align-items:center; padding:16px 20px; border-bottom:1px solid #edf0f1; }
+    .backup-row:last-child { border-bottom:0; }
+    .backup-file { display:flex; align-items:center; gap:11px; min-width:0; }
+    .file-icon { width:36px; height:36px; flex:0 0 36px; display:grid; place-items:center; background:#f1f3f4; border-radius:8px; color:#596166; }
+    .file-icon svg { width:18px; height:18px; }
+    .file-name { font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .file-meta { font-size:10px; color:var(--muted); margin-top:3px; }
+    .backup-value { font-size:12px; color:var(--ink-soft); }
+    .backup-label { display:none; color:var(--muted-2); font-size:10px; margin-bottom:3px; }
+    .empty-state { padding:38px 20px; text-align:center; color:var(--muted); }
+    .empty-state svg { width:33px; height:33px; color:#a7afb3; margin-bottom:10px; }
+
+    /* Billing page */
+    .current-plan { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 21px; margin-bottom:18px; }
+    .current-plan-label { font-size:11px; color:var(--muted); margin-bottom:4px; }
+    .current-plan-name { font:700 17px 'Archivo',sans-serif; }
+    .current-plan-info { color:var(--muted); font-size:11px; margin-top:3px; }
+    .billing-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; align-items:stretch; }
+    .price-card { display:flex; flex-direction:column; padding:20px; min-height:350px; }
+    .price-card.featured { border:1.5px solid #a5c700; box-shadow:0 0 0 2px rgba(212,255,0,.2), var(--shadow); }
+    .price-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+    .price-name { font:700 16px 'Archivo',sans-serif; }
+    .price-amount { font:700 34px/1.12 'Archivo',sans-serif; letter-spacing:-.05em; margin:16px 0 3px; }
+    .price-period { color:var(--muted); font-size:11px; }
+    .price-desc { color:var(--muted); font-size:11px; min-height:33px; margin:14px 0 15px; }
+    .price-divider { border:0; border-top:1px solid var(--line); width:100%; margin:0 0 15px; }
+    .feature-list { display:flex; flex-direction:column; gap:10px; padding:0; margin:0 0 22px; list-style:none; flex:1; }
+    .feature-list li { display:flex; align-items:flex-start; gap:8px; color:#525b60; font-size:11px; line-height:1.45; }
+    .feature-list svg { width:14px; height:14px; flex:0 0 14px; color:var(--green); margin-top:1px; }
+    .price-card .btn { width:100%; }
+    .billing-note { margin:15px 2px 0; font-size:10px; color:var(--muted); }
+    .footer-note { text-align:center; font-size:10px; color:#9aa1a5; padding-top:24px; }
+    .toast { position:fixed; z-index:99; right:22px; bottom:22px; max-width:min(420px,calc(100vw - 32px)); display:flex; align-items:flex-start; gap:10px; padding:13px 15px; color:#fff; background:#222629; border:1px solid rgba(255,255,255,.08); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.2); font-size:12px; opacity:0; transform:translateY(9px); pointer-events:none; transition:opacity .18s ease, transform .18s ease; }
+    .toast.show { opacity:1; transform:translateY(0); }
+    .toast svg { width:16px; height:16px; color:var(--lime); flex:0 0 16px; margin-top:1px; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    @media (max-width: 900px) {
+      .topbar { padding:0 18px; }
+      .brand { min-width:auto; }
+      .top-center { display:none; }
+      .top-actions { min-width:auto; }
+      .shell { padding-top:18px; }
+      .connection-details { grid-template-columns:1fr; gap:16px; }
+      .run-detail-grid { grid-template-columns:1fr; }
+      .billing-grid { grid-template-columns:1fr 1fr; }
+      .backup-row { grid-template-columns:minmax(0,1.5fr) .5fr auto; }
+      .backup-row .backup-date { display:none; }
+    }
+    @media (max-width: 620px) {
+      .topbar { height:60px; padding:0 13px; gap:10px; }
+      .brand-mark { width:32px; height:32px; }
+      .brand-name { font-size:17px; }
+      .brand-sub { display:none; }
+      .profile { display:none; }
+      .shell { padding:16px 12px 36px; }
+      .page-nav { margin-bottom:18px; }
+      .nav-btn { padding:10px 12px; font-size:12px; }
+      .page-head { display:block; margin-bottom:16px; }
+      .page-head .head-actions { margin-top:14px; }
+      .page-head .head-actions .btn { width:100%; }
+      .connect-card,.card-pad { padding:16px; }
+      .connect-intro { display:block; }
+      .connect-intro > .badge { margin-top:9px; }
+      .role-grid { grid-template-columns:1fr; gap:9px; }
+      .role-card { min-height:94px; padding:13px; }
+      .role-icon { width:42px; height:42px; flex-basis:42px; }
+      .connection-details { padding:12px; }
+      .code-row { align-items:stretch; }
+      .code-value { font-size:16px; letter-spacing:.08em; }
+      .copy-btn { padding:8px 10px; }
+      .how-card { padding:16px; }
+      .how-grid { grid-template-columns:1fr; gap:13px; }
+      .resource-strip { gap:6px; }
+      .resource-pill { padding:6px 8px; }
+      .run-main { display:block; }
+      .progress-stats { margin-top:18px; text-align:left; display:flex; align-items:baseline; gap:9px; }
+      .progress-number { font-size:25px; }
+      .run-card { padding:16px; }
+      .run-actions .btn { flex:1; }
+      .backup-hero { display:block; padding:17px; }
+      .backup-copy { align-items:flex-start; }
+      .backup-hero > .btn { width:100%; margin-top:17px; }
+      .backup-row { grid-template-columns:minmax(0,1fr) auto; gap:8px; padding:14px; }
+      .backup-row .backup-size { grid-column:1; padding-left:47px; }
+      .backup-row .backup-date { display:none; }
+      .backup-row .backup-action { grid-column:2; grid-row:1 / span 2; }
+      .backup-label { display:block; }
+      .billing-grid { grid-template-columns:1fr; gap:12px; }
+      .price-card { min-height:0; padding:18px; }
+      .price-desc { min-height:0; }
+      .current-plan { padding:15px; }
+      .current-plan .btn { flex-shrink:0; }
+      .footer-note { padding-top:18px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; transition-duration:.01ms !important; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" aria-label="Clonix home">
+      <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M13.3 2.8 5.7 13h5.2l-.5 8.2L18.3 10h-5.2l.2-7.2Z"/></svg></div>
+      <div><div class="brand-name">Clonix</div><div class="brand-sub">Store Duplicator &amp; Vault</div></div>
+    </div>
+    <div class="top-center"><div class="store-pill"><span class="dot"></span><span>Active store: <strong>ph0igg-jv.myshopify.com</strong></span></div></div>
+    <div class="top-actions">
+      <button class="icon-btn" title="Help and documentation" aria-label="Help" onclick="showToast('Help centre preview — connect your documentation URL here.')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 4.5 1.5c-1.2 1.2-2.1 1.4-2.1 3"/><path d="M12 17.2h.01"/></svg></button>
+      <div class="profile"><div class="avatar">CL</div><div><div class="profile-name">Store owner</div><div class="profile-plan">Free plan</div></div></div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <nav class="page-nav" aria-label="Main navigation">
+      <button class="nav-btn active" data-page="connect" onclick="switchPage('connect')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1"/></svg>Connect stores</button>
+      <button class="nav-btn" data-page="runs" onclick="switchPage('runs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Migration runs</button>
+      <button class="nav-btn" data-page="backups" onclick="switchPage('backups')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>Backups</button>
+      <button class="nav-btn" data-page="billing" onclick="switchPage('billing')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Billing</button>
+    </nav>
+
+    <!-- PAGE 1: Connect stores -->
+    <section class="page active" id="page-connect" aria-labelledby="connect-title">
+      <div class="page-head">
+        <div><div class="eyebrow">Store connection</div><h1 id="connect-title">Connect stores</h1><p class="page-desc">Link your source and destination stores before cloning data.</p></div>
+        <div class="head-actions"><button class="btn" onclick="resetConnection()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.5 9A7 7 0 0 1 18 6l2 6M4 12l2 6a7 7 0 0 0 12.5-3"/></svg>New connection</button></div>
+      </div>
+
+      <div class="card connect-card">
+        <div class="connect-intro"><div><h2>Select how you’ll use Clonix in this store</h2><p class="page-desc">Choose a role below. You can connect the second store in the next step.</p></div><span class="badge badge-gray"><span class="dot"></span>Current store detected</span></div>
+        <div class="role-grid" role="group" aria-label="Choose store role">
+          <button class="role-card selected" id="card-source" aria-pressed="true" onclick="selectRole('source')">
+            <span class="role-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5 12 4l8 4.5-8 4.5-8-4.5Z"/><path d="M4 12.5 12 17l8-4.5M4 16.5 12 21l8-4.5"/></svg></span>
+            <span class="role-content"><span class="role-top"><span class="role-title">Source store</span><span class="badge badge-green">Export data</span></span><span class="role-sub">Send products, collections, themes and store content to another store.</span></span>
+            <span class="radio" aria-hidden="true"></span>
+          </button>
+          <button class="role-card" id="card-dest" aria-pressed="false" onclick="selectRole('dest')">
+            <span class="role-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 16v4h16v-4"/></svg></span>
+            <span class="role-content"><span class="role-top"><span class="role-title">Destination store</span><span class="badge badge-gray">Import data</span></span><span class="role-sub">Receive the cloned store data from your source store securely.</span></span>
+            <span class="radio" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="connection-details">
+          <div id="source-instructions" class="steps">
+            <div class="step"><span class="step-num">1</span><div><strong>Open Clonix on the destination store.</strong><br>Install the app on the store you want to receive the data.</div></div>
+            <div class="step"><span class="step-num">2</span><div><strong>Share this pairing code.</strong><br>Use it to link both stores for this cloning session.</div></div>
+            <div class="step"><span class="step-num">3</span><div><strong>Confirm the connection.</strong><br>Review the store names before choosing what to clone.</div></div>
+          </div>
+          <div id="dest-instructions" class="steps" hidden>
+            <div class="step"><span class="step-num">1</span><div><strong>Open Clonix on the source store.</strong><br>Find the code displayed on its Connect stores page.</div></div>
+            <div class="step"><span class="step-num">2</span><div><strong>Enter the pairing code.</strong><br>The code is eight characters and expires after 15 minutes.</div></div>
+            <div class="step"><span class="step-num">3</span><div><strong>Review and confirm.</strong><br>Check both store domains before proceeding.</div></div>
+          </div>
+          <div class="code-panel" id="source-code-panel">
+            <label class="field-label">This store’s pairing code</label>
+            <div class="code-row"><div id="pairingCode" class="code-value">7K9M-2PX4</div><button class="btn btn-dark copy-btn" onclick="copyCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>Copy</button></div>
+            <div class="code-foot"><span>Secure pairing token</span><span>Expires in <span class="timer" id="timer">15:00</span></span></div>
+            <div class="content-foot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></svg>Use a time-limited code to link the stores.</div>
+            <div style="margin-top:12px; display:flex; justify-content:flex-end"><button class="btn btn-quiet" style="min-height:26px;padding:4px 6px" onclick="generateNewCode()">Generate new code</button></div>
+          </div>
+          <div class="code-panel" id="dest-code-panel" hidden>
+            <label class="field-label" for="destInput">Source store’s pairing code</label>
+            <div class="input-row"><input id="destInput" class="input mono" placeholder="XXXX-XXXX" maxlength="9" autocomplete="off" aria-describedby="pairing-help"><button class="btn btn-dark" onclick="connectDestination()">Connect</button></div>
+            <div class="code-foot"><span id="pairing-help">Enter the 8-character code from the source store.</span><button class="help-link" onclick="showToast('Open Connect stores in the source store and copy its pairing code.')">Where do I find it?</button></div>
+            <div class="content-foot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></svg>Always verify the store domains before cloning.</div>
+          </div>
+        </div>
+        <div class="resource-strip" aria-label="Supported data types"><span class="section-label" style="margin-right:3px">Supports</span><span class="resource-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8.5 12 4l8 4.5-8 4.5-8-4.5Z"/><path d="M4 12.5 12 17l8-4.5"/></svg>Products</span><span class="resource-pill">Collections</span><span class="resource-pill">Pages &amp; blogs</span><span class="resource-pill">Themes</span><span class="resource-pill">Metaobjects</span><span class="resource-pill">Media &amp; files</span></div>
+      </div>
+
+      <div class="card how-card">
+        <div class="card-heading"><h2>How store pairing works</h2><span class="muted micro">Three simple steps</span></div>
+        <div class="how-grid">
+          <div class="how-step"><span class="how-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h5M8 16h8"/></svg></span><div><strong>Generate a code</strong><p>Get a one-time pairing code from the source store.</p></div></div>
+          <div class="how-step"><span class="how-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 12h8M12 8l4 4-4 4"/><circle cx="12" cy="12" r="9"/></svg></span><div><strong>Link both stores</strong><p>Enter the code in the destination store and confirm the domains.</p></div></div>
+          <div class="how-step"><span class="how-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 12.5 9 17l11-11"/><circle cx="12" cy="12" r="9"/></svg></span><div><strong>Choose what to clone</strong><p>Review the preflight audit before starting a migration.</p></div></div>
+        </div>
+      </div>
+      <p class="tiny-note">Interactive UI preview. Pairing and migration actions are simulated here; connect the Shopify app backend for live store operations.</p>
+    </section>
+
+    <!-- PAGE 2: Migration runs -->
+    <section class="page" id="page-runs" aria-labelledby="runs-title">
+      <div class="page-head"><div><div class="eyebrow">Activity</div><h1 id="runs-title">Migration runs</h1><p class="page-desc">Review transfer progress, item checks and migration results.</p></div><div class="head-actions"><button class="btn btn-lime" onclick="switchPage('connect')">Start a new clone <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div></div>
+      <div class="card run-card">
+        <div class="run-main"><div><div class="run-label"><span class="badge badge-green"><span class="dot"></span>Running</span><span class="run-id">CLX-2026-0847</span><span class="badge badge-gray">Preview run</span></div><h2 class="run-title">Store clone: source → destination</h2><div class="run-domain">ph0igg-jv.myshopify.com <span style="padding:0 6px">→</span> tibbeshifa-clone.myshopify.com</div></div><div class="progress-stats"><div id="progressPercent" class="progress-number">78%</div><span class="muted small">complete</span></div></div>
+        <div class="progress-track"><div class="progress-fill" id="progressBar"></div></div><div class="progress-caption"><span id="progressStatus">Stage 11 of 14 · Theme &amp; Liquid</span><span id="remainingTime">Est. 2 minutes remaining</span></div>
+        <div class="run-detail-grid">
+          <div class="inner-panel"><div class="inner-head"><h3>Migration stages</h3><span class="badge badge-gray" id="stageCount">4 of 6 shown</span></div><div class="inner-body"><div class="stage-list" id="stageList">
+            <div class="stage-row done"><div class="stage-left"><span class="stage-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg></span><div><div class="stage-name">Preflight audit</div><div class="stage-desc">Store readiness and resource checks</div></div></div><span class="status-ok">Passed</span></div>
+            <div class="stage-row done"><div class="stage-left"><span class="stage-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg></span><div><div class="stage-name">Products &amp; variants</div><div class="stage-desc">7 products · variants and inventory</div></div></div><span class="status-ok">7/7</span></div>
+            <div class="stage-row done"><div class="stage-left"><span class="stage-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg></span><div><div class="stage-name">Collections &amp; pages</div><div class="stage-desc">Content and navigation records</div></div></div><span class="status-ok">Passed</span></div>
+            <div class="stage-row current"><div class="stage-left"><span class="stage-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/></svg></span><div><div class="stage-name">Theme &amp; Liquid assets</div><div class="stage-desc">Copying theme files and checking references</div></div></div><span class="badge badge-amber">In progress</span></div>
+            <div class="stage-row"><div class="stage-left"><span class="stage-check"></span><div><div class="stage-name">URL remapping</div><div class="stage-desc">Reviewing destination links</div></div></div><span class="muted micro">Pending</span></div>
+            <div class="stage-row"><div class="stage-left"><span class="stage-check"></span><div><div class="stage-name">Final verification</div><div class="stage-desc">Compare migrated resources</div></div></div><span class="muted micro">Pending</span></div>
+          </div></div></div>
+          <div class="inner-panel"><div class="inner-head"><h3>Resource verification</h3><span class="badge badge-gray">Example data</span></div><div class="table-wrap"><table><thead><tr><th>Resource</th><th>Source</th><th>Destination</th><th>Status</th></tr></thead><tbody><tr><td><strong>Products</strong></td><td>7</td><td>7 created</td><td><span class="status-ok">Matched</span></td></tr><tr><td><strong>Collections</strong></td><td>7</td><td>7 copied</td><td><span class="status-ok">Matched</span></td></tr><tr><td><strong>Pages</strong></td><td>11</td><td>11 copied</td><td><span class="status-ok">Matched</span></td></tr><tr><td><strong>Theme assets</strong></td><td>523 files</td><td>In progress</td><td><span class="badge badge-amber">Checking</span></td></tr><tr><td><strong>URL references</strong></td><td>Pending</td><td>Pending</td><td><span class="badge badge-gray">Not checked</span></td></tr></tbody></table></div></div>
+        </div>
+        <div class="run-actions"><button class="btn btn-dark" onclick="runSimulation()">Run progress preview</button><button class="btn" onclick="showToast('The live log viewer will appear here when connected to migration events.')">View activity log</button><button class="btn" onclick="showToast('The result report is a preview until the migration backend is connected.')">View result report</button></div>
+      </div>
+      <p class="tiny-note">The displayed run is sample data for the interface preview. URL checks and migration completion must be confirmed by the live backend.</p>
+    </section>
+
+    <!-- PAGE 3: Backups -->
+    <section class="page" id="page-backups" aria-labelledby="backups-title">
+      <div class="page-head"><div><div class="eyebrow">Recovery</div><h1 id="backups-title">Backups</h1><p class="page-desc">Keep a restore point for important store data before making changes.</p></div><div class="head-actions"><button class="btn btn-lime" onclick="createBackup()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Create backup</button></div></div>
+      <div class="card backup-hero">
+        <div class="backup-copy"><div class="backup-illustration"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></svg></div><div><h2>Protect the essentials</h2><p>Create a snapshot before changing your theme, catalog or store structure. Backups include the resources supported by your connected plan.</p></div></div>
+        <button class="btn btn-dark" onclick="createBackup()">Back up current store</button>
+      </div>
+      <div class="card backup-list">
+        <div class="inner-head" style="padding:16px 20px"><h2>Recent backups</h2><span class="badge badge-gray" id="backupCount">3 snapshots</span></div>
+        <div id="backupRows">
+          <div class="backup-row"><div class="backup-file"><div class="file-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></div><div style="min-width:0"><div class="file-name">TibbeShifa — pre-migration snapshot</div><div class="file-meta">Products, pages, theme files and metafields</div></div></div><div class="backup-value backup-size"><div class="backup-label">Size</div>1.78 MB</div><div class="backup-value backup-date"><div class="backup-label">Created</div>Oct 17, 2026</div><div class="backup-action"><button class="btn" onclick="showToast('Download is a UI preview. Connect backup storage to enable archive download.')">Download</button></div></div>
+          <div class="backup-row"><div class="backup-file"><div class="file-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></div><div style="min-width:0"><div class="file-name">TibbeShifa — weekly backup</div><div class="file-meta">Scheduled snapshot</div></div></div><div class="backup-value backup-size"><div class="backup-label">Size</div>1.24 MB</div><div class="backup-value backup-date"><div class="backup-label">Created</div>Oct 15, 2026</div><div class="backup-action"><button class="btn" onclick="showToast('Restore preview only. Verify backup compatibility before enabling restore.')">Details</button></div></div>
+          <div class="backup-row"><div class="backup-file"><div class="file-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></div><div style="min-width:0"><div class="file-name">TibbeShifa — manual backup</div><div class="file-meta">Created before theme edits</div></div></div><div class="backup-value backup-size"><div class="backup-label">Size</div>980 KB</div><div class="backup-value backup-date"><div class="backup-label">Created</div>Oct 10, 2026</div><div class="backup-action"><button class="btn" onclick="showToast('Restore preview only. Live backup storage is not connected in this HTML.')">Details</button></div></div>
+        </div>
+      </div>
+      <p class="tiny-note">Snapshot rows are examples carried over from the design prototype. Retention, download and restore depend on the implemented backup service and active plan.</p>
+    </section>
+
+    <!-- PAGE 4: Billing -->
+    <section class="page" id="page-billing" aria-labelledby="billing-title">
+      <div class="page-head"><div><div class="eyebrow">Plans</div><h1 id="billing-title">Billing</h1><p class="page-desc">Choose the plan that fits your store or agency workflow.</p></div><div class="head-actions"><button class="btn" onclick="showToast('Connected-store management will open here when linked to Shopify.')">Connected stores</button></div></div>
+      <div class="card current-plan"><div><div class="current-plan-label">Your current plan</div><div class="current-plan-name" id="currentPlanName">Free audit</div><div class="current-plan-info" id="currentPlanInfo">Audit your store before choosing a clone pass.</div></div><span class="badge badge-green" id="currentPlanBadge">Active</span></div>
+      <div class="billing-grid">
+        <article class="card price-card" data-plan-card="free"><div class="price-top"><div class="price-name">Free Audit</div><span class="badge badge-gray">$0</span></div><div class="price-amount">$0</div><div class="price-period">Free to use</div><p class="price-desc">Inspect your store and understand what is ready to migrate.</p><hr class="price-divider"><ul class="feature-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg>Up to 12 products and 1 collection in the free clone tier</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg>Preflight audit and resource overview</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg>Review supported data before proceeding</li></ul><button class="btn" id="plan-free-btn" onclick="choosePlan('free')">Current plan</button></article>
+        <article class="card price-card featured" data-plan-card="pass"><div class="price-top"><div class="price-name">Single Clone Pass</div><span class="badge badge-lime">Popular</span></div><div class="price-amount">$9</div><div class="price-period">One-time payment</div><p class="price-desc">Clone one store without a monthly commitment.</p><hr class="price-divider"><ul class="feature-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg>Unlimited products and collections for the pass</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg>Theme files and media remapping</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg>URL verification workflow</li></ul><button class="btn btn-lime" id="plan-pass-btn" onclick="choosePlan('pass')">Choose clone pass</button></article>
+        <article class="card price-card" data-plan-card="agency"><div class="price-top"><div class="price-name">Unlimited Pro</div><span class="badge badge-gray">Agency</span></div><div class="price-amount">$49</div><div class="price-period">Per month</div><p class="price-desc">For agencies, multi-store teams and repeat migrations.</p><hr class="price-divider"><ul class="feature-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg>Unlimited store duplications</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg>Automated vault backups</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg>Agency pairing workflow</li></ul><button class="btn btn-dark" id="plan-agency-btn" onclick="choosePlan('agency')">Choose agency plan</button></article>
+      </div>
+      <p class="billing-note">Prices shown are the current Clonix prototype pricing ($0 / $9 / $49). Plan activation buttons demonstrate the UI only; Shopify billing is not triggered by this standalone HTML.</p>
+    </section>
+
+    <div class="footer-note">Clonix · Shopify Store Duplicator &amp; Vault · Interface preview</div>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m5 12 4 4L19 6"/></svg><span id="toastText">Done.</span></div>
+
+  <script>
+    const state = { role: 'source', secondsLeft: 15 * 60, timerHandle: null, plan: 'free', backupNumber: 3, simulationTimer: null };
+    function switchPage(name) {
+      document.querySelectorAll('.page').forEach(page => page.classList.toggle('active', page.id === 'page-' + name));
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.page === name));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    function selectRole(role) {
+      state.role = role;
+      const source = role === 'source';
+      document.getElementById('card-source').classList.toggle('selected', source);
+      document.getElementById('card-dest').classList.toggle('selected', !source);
+      document.getElementById('card-source').setAttribute('aria-pressed', String(source));
+      document.getElementById('card-dest').setAttribute('aria-pressed', String(!source));
+      document.getElementById('source-instructions').hidden = !source;
+      document.getElementById('dest-instructions').hidden = source;
+      document.getElementById('source-code-panel').hidden = !source;
+      document.getElementById('dest-code-panel').hidden = source;
+      if (!source) setTimeout(() => document.getElementById('destInput').focus(), 80);
+    }
+    function resetConnection() {
+      selectRole('source');
+      generateNewCode();
+      const input = document.getElementById('destInput');
+      if (input) input.value = '';
+      showToast('New pairing session preview is ready.');
+    }
+    function generateNewCode() {
+      const chars = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+      let raw = '';
+      for (let i = 0; i < 8; i++) raw += chars[Math.floor(Math.random() * chars.length)];
+      document.getElementById('pairingCode').textContent = raw.slice(0,4) + '-' + raw.slice(4);
+      state.secondsLeft = 15 * 60;
+      updateTimer();
+      showToast('New 15-minute pairing code generated.');
+    }
+    function updateTimer() {
+      const minutes = Math.floor(state.secondsLeft / 60).toString().padStart(2, '0');
+      const seconds = (state.secondsLeft % 60).toString().padStart(2, '0');
+      const timer = document.getElementById('timer');
+      if (!timer) return;
+      timer.textContent = minutes + ':' + seconds;
+      timer.style.color = state.secondsLeft < 60 ? 'var(--red)' : '';
+    }
+    function tickTimer() {
+      if (state.secondsLeft > 0) state.secondsLeft--;
+      updateTimer();
+      if (state.secondsLeft === 0) {
+        clearInterval(state.timerHandle);
+        showToast('Pairing code expired. Generate a new code to continue.');
+      }
+    }
+    async function copyCode() {
+      const code = document.getElementById('pairingCode').textContent;
+      try {
+        if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(code);
+        else {
+          const temp = document.createElement('textarea'); temp.value = code; temp.style.position = 'fixed'; temp.style.opacity = '0'; document.body.appendChild(temp); temp.select(); document.execCommand('copy'); temp.remove();
+        }
+        showToast('Pairing code copied: ' + code);
+      } catch (err) { showToast('Pairing code: ' + code + ' — select the code to copy it manually.'); }
+    }
+    function connectDestination() {
+      const input = document.getElementById('destInput');
+      const val = input.value.trim().toUpperCase();
+      if (!/^[0-9A-HJKMNP-TV-Z]{4}-?[0-9A-HJKMNP-TV-Z]{4}$/.test(val)) {
+        input.setCustomValidity('Enter a valid 8-character pairing code, such as 7K9M-2PX4.'); input.reportValidity(); return;
+      }
+      input.setCustomValidity('');
+      showToast('Connection flow preview accepted the code. Live store authorization needs the backend.');
+      document.getElementById('card-dest').querySelector('.role-sub').textContent = 'Code accepted in preview. Confirm both store domains before cloning.';
+      document.getElementById('card-dest').querySelector('.badge').textContent = 'Code entered';
+    }
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastText').textContent = message;
+      toast.classList.add('show');
+      clearTimeout(showToast.timeout);
+      showToast.timeout = setTimeout(() => toast.classList.remove('show'), 3400);
+    }
+    function runSimulation() {
+      if (state.simulationTimer) clearInterval(state.simulationTimer);
+      switchPage('runs');
+      let pct = 20;
+      const bar = document.getElementById('progressBar');
+      const label = document.getElementById('progressPercent');
+      const status = document.getElementById('progressStatus');
+      const remaining = document.getElementById('remainingTime');
+      label.textContent = pct + '%'; bar.style.width = pct + '%';
+      status.textContent = 'Preview running · processing store resources';
+      remaining.textContent = 'Demo progress';
+      state.simulationTimer = setInterval(() => {
+        pct += 10;
+        if (pct >= 100) {
+          pct = 100; clearInterval(state.simulationTimer); state.simulationTimer = null;
+          status.textContent = 'Preview finished · final verification is not connected';
+          remaining.textContent = 'Preview complete';
+          showToast('Progress preview finished. No Shopify data was changed.');
+        } else {
+          status.textContent = pct < 45 ? 'Preview running · products and collections' : pct < 75 ? 'Preview running · theme and media' : 'Preview running · URL verification';
+          remaining.textContent = 'Demo progress';
+        }
+        bar.style.width = pct + '%'; label.textContent = pct + '%';
+      }, 420);
+    }
+    function createBackup() {
+      state.backupNumber++;
+      const now = new Date();
+      const date = now.toLocaleDateString('en-US', {month:'short',day:'2-digit',year:'numeric'});
+      const row = document.createElement('div'); row.className = 'backup-row';
+      row.innerHTML = '<div class="backup-file"><div class="file-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></div><div style="min-width:0"><div class="file-name">Clonix preview snapshot #' + String(state.backupNumber).padStart(3,'0') + '</div><div class="file-meta">Sample snapshot · current store</div></div></div><div class="backup-value backup-size"><div class="backup-label">Size</div>Pending</div><div class="backup-value backup-date"><div class="backup-label">Created</div>' + date + '</div><div class="backup-action"><button class="btn" onclick="showToast(\'This is a preview row. Connect backup storage for a real download.\')">Details</button></div>';
+      document.getElementById('backupRows').prepend(row);
+      document.getElementById('backupCount').textContent = state.backupNumber + ' snapshots';
+      showToast('Snapshot added to the preview list. No store data was uploaded.');
+    }
+    function choosePlan(plan) {
+      state.plan = plan;
+      const labels = { free: ['Free audit', 'Audit your store before choosing a clone pass.'], pass: ['Single Clone Pass', 'Selected: one-time $9 clone pass. Activation requires Shopify billing.'], agency: ['Unlimited Pro', 'Selected: $49/month agency plan. Activation requires Shopify billing.'] };
+      document.getElementById('currentPlanName').textContent = labels[plan][0];
+      document.getElementById('currentPlanInfo').textContent = labels[plan][1];
+      document.getElementById('currentPlanBadge').textContent = plan === 'free' ? 'Active preview' : 'Selected in preview';
+      document.querySelectorAll('[data-plan-card]').forEach(card => card.classList.toggle('featured', card.dataset.planCard === plan));
+      document.querySelectorAll('.price-card .btn').forEach(btn => { btn.classList.remove('btn-dark'); btn.classList.remove('btn-lime'); });
+      const chosen = document.getElementById('plan-' + plan + '-btn');
+      if (chosen) { chosen.classList.add(plan === 'pass' ? 'btn-lime' : 'btn-dark'); chosen.textContent = plan === 'free' ? 'Current plan' : 'Selected in preview'; }
+      showToast(plan === 'free' ? 'Free audit selected.' : labels[plan][0] + ' selected in preview. No payment was taken.');
+    }
+    document.getElementById('destInput').addEventListener('input', event => {
+      let value = event.target.value.toUpperCase().replace(/[^0-9A-HJKMNP-TV-Z]/g, '').slice(0,8);
+      if (value.length > 4) value = value.slice(0,4) + '-' + value.slice(4);
+      event.target.value = value;
+      event.target.setCustomValidity('');
+    });
+    state.timerHandle = setInterval(tickTimer, 1000);
+    updateTimer();
+  </script>
+</body>
+</html>
