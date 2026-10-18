@@ -172,13 +172,13 @@ export class DoubleCheckDiagnoser {
     const srcProds = srcData?.data?.products?.edges || [];
     const destProds = destData?.data?.products?.edges || [];
 
-    const destByHandle = new Map(destProds.map((p: any) => [p.node.handle, p.node]));
+    const destByHandle = new Map<string, any>(destProds.map((p: any) => [p.node.handle, p.node]));
     const details: ProductParityDetail[] = [];
     const metricDetails: string[] = [];
 
-    for (const sp of srcProds) {
-      const srcNode = sp.node;
-      const destNode = destByHandle.get(srcNode.handle);
+    for (const sp of (srcProds as any[])) {
+      const srcNode: any = sp.node;
+      const destNode: any = destByHandle.get(srcNode.handle);
       const issues: string[] = [];
 
       if (!destNode) {

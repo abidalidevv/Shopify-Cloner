@@ -1,3 +1,4 @@
+/// <reference path="./aws-sdk.d.ts" />
 // r2.ts — Cloudflare R2 through its S3-compatible API. Needs: @aws-sdk/client-s3, @aws-sdk/s3-request-presigner.
 // Env: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET.
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -5,11 +6,16 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createInterface } from "node:readline";
 import type { Readable } from "node:stream";
 
+const accountId = process.env.R2_ACCOUNT_ID || "mock-account";
+const accessKey = process.env.R2_ACCESS_KEY_ID || "mock-key";
+const secretKey = process.env.R2_SECRET_ACCESS_KEY || "mock-secret";
+const Bucket = process.env.R2_BUCKET || "clonix-vault";
+
 const s3 = new S3Client({
-  region: "auto", endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: { accessKeyId: process.env.R2_ACCESS_KEY_ID ?? "", secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? "" },
+  region: "auto",
+  endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+  credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
 });
-const Bucket = process.env.R2_BUCKET ?? "";
 
 export interface R2 {
   put(key: string, body: Uint8Array | string, contentType?: string): Promise<void>;

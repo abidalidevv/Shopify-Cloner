@@ -60,7 +60,8 @@ export function makeGql(shopId: string, domain: string): Gql {
     if (body.errors?.some((e) => e.extensions?.code === "THROTTLED")) throw new Defer(2000);
     const denied = body.errors?.find((e) => e.extensions?.code === "ACCESS_DENIED");
     if (denied) throw new Systemic(`access denied (missing scope?): ${denied.message}`);
-    if (body.errors?.length && !body.data) throw new Error(body.errors[0].message);
+    const firstErr = body.errors?.[0];
+    if (firstErr && !body.data) throw new Error(firstErr.message);
     return body.data;
   };
 }

@@ -8,7 +8,7 @@
 //   - The barrier is a COUNT over CloneTask, taken under a row lock on CloneRun.
 //   - Every executor is idempotent, so a duplicate or replayed job is harmless.
 
-import PgBoss from "pg-boss";
+import { PgBoss } from "pg-boss";
 import * as crypto from "node:crypto";
 import { Prisma, ResourceType as RT } from "@prisma/client";
 import type { CloneRun, CloneTask } from "@prisma/client";
@@ -20,9 +20,9 @@ import type { Ctx, IdMapRow, Outcome, ItemExecutor } from "./executors.js";
 import { makeGql } from "./shopify-client.js";
 import { r2 } from "./r2.js";
 import { runStage0Extract } from "./extractor.js";
-import { buildIndex } from "./remapper.js";
+import { buildIndex, newCollector } from "./remapper.js";
 
-export const boss = new PgBoss(process.env.DATABASE_URL!);
+export const boss = new PgBoss(process.env.DATABASE_URL || "postgres://localhost:5432/clonix");
 const WORKER_ID = `${process.env.HOSTNAME ?? "w"}:${process.pid}:${crypto.randomUUID().slice(0, 6)}`;
 
 export const Q = { ADVANCE: "run-advance", TASK: "clone-task", SWEEP: "run-sweep" } as const;
@@ -77,7 +77,7 @@ const backoffMs = (attempt: number) => Math.min(5 * 60_000, 2 ** attempt * 2_000
 
 // Called when the destination owner confirms the preflight report.
 export async function startRun(runId: string) {
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: any) => {
     const r = await tx.cloneRun.updateMany({
       where: { id: runId, status: "AWAITING_CONFIRM" },          // double-click safe
       data: { status: "RUNNING", startedAt: new Date(), currentStage: 0 },
@@ -89,7 +89,7 @@ export async function startRun(runId: string) {
 
 // Resume after PAUSED: reset FAILED tasks, flip status, ring the bell.
 export async function resumeRun(runId: string) {
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: any) => {
     await lockRun(tx, runId);
     const r = await tx.cloneRun.updateMany({ where: { id: runId, status: "PAUSED" }, data: { status: "RUNNING" } });
     if (r.count !== 1) return;
@@ -116,7 +116,7 @@ export async function advanceRun(runId: string) {
 }
 
 async function advanceOnce(runId: string): Promise<Step> {
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: any) => {
     // Serializes every advancer and every task finalizer for this run. Without it, two tasks finishing
     // concurrently can each still see the other as RUNNING, and nobody advances.
     await lockRun(tx, runId);
@@ -124,6 +124,7 @@ async function advanceOnce(runId: string): Promise<Step> {
     const run = await tx.cloneRun.findUniqueOrThrow({ where: { id: runId } });
     if (run.status !== "RUNNING") return "stop";
     const def = STAGES[run.currentStage];
+    if (!def) return "stop";
 
     // 1. Barrier: anything still open in this stage?
     const open = await tx.cloneTask.count({
@@ -139,7 +140,7 @@ async function advanceOnce(runId: string): Promise<Step> {
       if (planned === 0) {
         await assertShopsHealthy(tx, run);                                  // throws -> run paused by caller
         const tasks = await planPass(tx, run, def, pass);
-        for (const t of tasks.filter((t) => t.status === "PENDING")) {
+        for (const t of tasks.filter((taskItem: any) => taskItem.status === "PENDING")) {
           await boss.send(Q.TASK, { taskId: t.id }, { db: txDb(tx), expireInSeconds: 600, retryLimit: 2 });
         }
         return "planned";
@@ -182,7 +183,7 @@ async function assertShopsHealthy(tx: Prisma.TransactionClient, run: CloneRun) {
   // Both shops must still be ACTIVE and the pair (if any) not revoked. A cheap `shop { id }` query
   // with each token is also worth doing here to catch revoked tokens before a stage starts.
   const shops = await tx.shop.findMany({ where: { OR: [{ id: run.destShopId }, { sourcePairs: { some: { id: run.pairId ?? "" } } }] } });
-  if (shops.some((s) => s.status !== "ACTIVE")) throw new Error("SYSTEMIC: a shop was uninstalled");
+  if (shops.some((s: any) => s.status !== "ACTIVE")) throw new Error("SYSTEMIC: a shop was uninstalled");
 }
 
 /* Fan-out: turn the stage's SnapshotObjects into shard tasks. */
@@ -210,7 +211,8 @@ async function planPass(tx: Prisma.TransactionClient, run: CloneRun, def: StageD
 
   // Sentinel so an empty pass still counts as "planned" (otherwise the pass would re-plan forever).
   if (rows.length === 0) {
-    rows.push({ runId: run.id, stage: def.stage, resourceType: def.types[0], shardKey: `${pass}:EMPTY`, status: "SKIPPED" });
+    const fallbackType = def.types[0] || RT.SYSTEM;
+    rows.push({ runId: run.id, stage: def.stage, resourceType: fallbackType, shardKey: `${pass}:EMPTY`, status: "SKIPPED" });
   }
   await tx.cloneTask.createMany({ data: rows, skipDuplicates: true });   // (runId, resourceType, shardKey) is unique
   return tx.cloneTask.findMany({ where: { runId: run.id, stage: def.stage, shardKey: { startsWith: `${pass}:` } } });
@@ -277,7 +279,7 @@ async function requeue(task: CloneTask, ms: number, countsAsAttempt: boolean) {
 
 // Last finisher rings the advance bell. Done under the run lock so the count cannot race.
 async function settle(task: CloneTask, patch: { status: "SUCCEEDED" | "FAILED"; lastError?: string }) {
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: any) => {
     await lockRun(tx, task.runId);
     await tx.cloneTask.update({ where: { id: task.id }, data: { ...patch, leaseUntil: null, finishedAt: new Date() } });
     const open = await tx.cloneTask.count({
@@ -288,10 +290,6 @@ async function settle(task: CloneTask, patch: { status: "SUCCEEDED" | "FAILED"; 
 }
 
 /* ───────────────────────── 6. Shard loop with checkpoints ───────────────────────── */
-
-type Outcome = { kind: "ok" | "skipped" } | { kind: "failed"; code: string; message: string; userErrors?: unknown; retryable?: boolean };
-type ItemExecutor = (ctx: Ctx, item: any, existing: IdMapRow | undefined) => Promise<Outcome>;
-type IdMapRow = { destGid: string; destHandle: string | null; checksum: string | null };
 
 async function runShard(task: CloneTask) {
   const run = await prisma.cloneRun.findUniqueOrThrow({ where: { id: task.runId } });
@@ -383,7 +381,7 @@ export async function buildCtx(run: CloneRun, stage = 0, pass = "A"): Promise<Ct
   });
 
   const idx = buildIndex(
-    idRows.map((r) => ({
+    idRows.map((r: any) => ({
       resourceType: r.resourceType,
       sourceGid: r.sourceGid,
       destGid: r.destGid,
@@ -462,7 +460,7 @@ export async function buildCtx(run: CloneRun, stage = 0, pass = "A"): Promise<Ct
       domain: destShop.domain,
       gql: destGql,
     },
-    remap: { idx, c: { warnings: [], unresolvedUrls: [] } },
+    remap: { idx, c: newCollector() },
     db,
     r2,
     http: fetch,
@@ -483,7 +481,7 @@ async function loadIdMap(run: CloneRun, resourceType: RT, ids: string[]): Promis
     where: { lastRunId: run.id, resourceType, sourceGid: { in: ids } },
   });
   return new Map(
-    rows.map((r) => [r.sourceGid, { destGid: r.destGid, destHandle: r.destHandle, checksum: r.checksum, destUrl: r.destUrl }])
+    rows.map((r: any) => [r.sourceGid, { destGid: r.destGid, destHandle: r.destHandle, checksum: r.checksum, destUrl: r.destUrl }])
   );
 }
 
@@ -525,8 +523,14 @@ async function sweep() {
 export async function startWorkers() {
   await boss.start();
   for (const q of Object.values(Q)) await boss.createQueue(q);
-  await boss.work(Q.ADVANCE, async ([job]) => advanceRun((job.data as { runId: string }).runId));
-  await boss.work(Q.TASK, { batchSize: 1 }, async ([job]) => handleTask((job.data as { taskId: string }).taskId));
+  await boss.work(Q.ADVANCE, async (jobs: any) => {
+    const job = jobs[0];
+    if (job?.data?.runId) await advanceRun(job.data.runId);
+  });
+  await boss.work(Q.TASK, { batchSize: 1 }, async (jobs: any) => {
+    const job = jobs[0];
+    if (job?.data?.taskId) await handleTask(job.data.taskId);
+  });
   await boss.schedule(Q.SWEEP, "* * * * *");
   await boss.work(Q.SWEEP, async () => sweep());
 }

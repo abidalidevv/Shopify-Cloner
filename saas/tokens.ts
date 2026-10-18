@@ -24,7 +24,7 @@ export async function getAccessToken(shopId: string): Promise<string> {
 }
 
 async function refreshLocked(shopId: string): Promise<string> {
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: any) => {
     await tx.$queryRaw`SELECT id FROM "Shop" WHERE id = ${shopId} FOR UPDATE`;      // one refresher per shop
     const s = await tx.shop.findUniqueOrThrow({ where: { id: shopId } });
 

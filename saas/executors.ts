@@ -12,12 +12,12 @@
 // That is what makes every executor unit-testable with fakes.
 
 import crypto from "node:crypto";
-import { Defer } from "./errors";
+import { Defer, RemapError } from "./errors.js";
 import {
-  RemapError, newCollector, rewriteHtml, rewriteUrl, rewriteJsonDeep, rewriteUrlsInText,
+  newCollector, rewriteHtml, rewriteUrl, rewriteJsonDeep, rewriteUrlsInText,
   remapMetafield, resolveGid, toProductSetInput, mapDestVariants,
-} from "./remapper";
-import type { Collector, DeferredRef, RemapCtx, SrcMetafield, SrcProduct, Warning } from "./remapper";
+} from "./remapper.js";
+import type { Collector, DeferredRef, RemapCtx, SrcMetafield, SrcProduct, Warning } from "./remapper.js";
 
 /* ───────────────────────── Contract types ───────────────────────── */
 
@@ -448,13 +448,18 @@ export const articleExecutor: ItemExecutor = async (ctx, src: SrcArticle, existi
                        : (await ctx.dest.gql(ARTICLE_CREATE, { article }, { cost: 10 })).articleCreate;
       return { destGid: r.article?.id, destHandle: r.article?.handle, userErrors: r.userErrors };
     },
-    mapExtra: () => ({ destHandle: undefined }),                         // overwritten below with the blog-qualified handle
-    after: async (destGid) => { await ctx.db.saveMap("ARTICLE", src.id, destGid, { sourceHandle: `${src.blogHandle}/${src.handle}`, destHandle: `${blogHandleOf(ctx, src.blogId) ?? src.blogHandle}/${src.handle}` }); },
+    mapExtra: () => ({ destHandle: null }),                         // overwritten below with the blog-qualified handle
+    after: async (destGid) => {
+      const destBlog = blogHandleOf(ctx, src.blogHandle) ?? src.blogHandle;
+      await ctx.db.saveMap("ARTICLE", src.id, destGid, {
+        sourceHandle: `${src.blogHandle}/${src.handle}`,
+        destHandle: `${destBlog}/${src.handle}`,
+      });
+    },
   });
 };
-const blogHandleOf = (ctx: Ctx, sourceBlogGid: string): string | undefined => {
-  // destination blog handle equals the source handle unless it collided; the index stores it on the BLOG row
-  void ctx; void sourceBlogGid; return undefined;
+const blogHandleOf = (ctx: Ctx, sourceBlogHandle: string): string | undefined => {
+  return ctx.remap.idx.handle("BLOG", sourceBlogHandle);
 };
 
 /* ───────────────────────── Stage 9: Menus ───────────────────────── */
@@ -511,11 +516,13 @@ const THEME_FILES_UPSERT = `mutation($themeId: ID!, $files: [OnlineStoreThemeFil
 export function rewriteThemeFile(filename: string, text: string, rc: RemapCtx): { text: string; changed: boolean; residual: string | null } {
   let out = text;
   if (/\.json$/i.test(filename)) {
-    const m = /^(\s*\/\*[\s\S]*?\*\/\s*)?([\s\S]*)$/.exec(text)!;       // settings_data.json often starts with a /* ... */ banner
+    const m = /^(\s*\/\*[\s\S]*?\*\/\s*)?([\s\S]*)$/.exec(text);       // settings_data.json often starts with a /* ... */ banner
+    const banner = m?.[1] ?? "";
+    const jsonStr = m?.[2] ?? text;
     try {
-      const doc = JSON.parse(m[2]);
+      const doc = JSON.parse(jsonStr);
       const next = JSON.stringify(rewriteJsonDeep(doc, rc.idx, rc.c), null, 2);
-      if (next !== JSON.stringify(doc, null, 2)) out = (m[1] ?? "") + next;
+      if (next !== JSON.stringify(doc, null, 2)) out = banner + next;
     } catch { rc.c.warnings.push({ code: "THEME_JSON_PARSE", detail: filename }); }
   } else {
     out = rewriteUrlsInText(text, rc.idx, rc.c);                         // .liquid (incl. {% schema %}), .css, .js

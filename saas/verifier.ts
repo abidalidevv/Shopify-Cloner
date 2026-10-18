@@ -8,8 +8,8 @@
 //   - Know what you rendered. An unpublished cloned theme is NOT what a plain page request renders, so the
 //     crawler reads Shopify.theme.id from the HTML and says which theme it actually saw.
 
-import { remapMetafield, newCollector, isReservedNamespace, scanHtml } from "./remapper";
-import type { RemapIndex } from "./remapper";
+import { remapMetafield, newCollector, isReservedNamespace, scanHtml } from "./remapper.js";
+import type { RemapIndex } from "./remapper.js";
 
 /* ───────────────────────── Types ───────────────────────── */
 
@@ -77,7 +77,14 @@ export function sample<T>(items: T[], max: number, key: (x: T) => string): T[] {
 
 async function pool<T>(items: T[], n: number, fn: (x: T) => Promise<void>): Promise<void> {
   let i = 0;
-  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) await fn(items[i++]); }));
+  await Promise.all(
+    Array.from({ length: Math.min(n, items.length) }, async () => {
+      while (i < items.length) {
+        const item = items[i++];
+        if (item !== undefined) await fn(item);
+      }
+    })
+  );
 }
 
 const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -152,8 +159,10 @@ async function applyDeferredPatches(ctx: VerifyCtx, add: (c: Check) => void): Pr
         if (e.elementIndex == null) send.forEach((_, k) => bad.set(k, e.message)); else bad.set(e.elementIndex, e.message);
       }
       for (let k = 0; k < send.length; k++) {
-        if (bad.has(k)) { await ctx.db.settlePatch(send[k].p.id, "FAILED", bad.get(k)); failed++; }
-        else { await ctx.db.settlePatch(send[k].p.id, "DONE"); done++; }
+        const item = send[k];
+        if (!item) continue;
+        if (bad.has(k)) { await ctx.db.settlePatch(item.p.id, "FAILED", bad.get(k)); failed++; }
+        else { await ctx.db.settlePatch(item.p.id, "DONE"); done++; }
       }
     }
   }
@@ -170,13 +179,16 @@ const COUNT_FIELDS: Record<string, string> = {
 };
 
 async function checkCounts(ctx: VerifyCtx, add: (c: Check) => void): Promise<void> {
-  const keys = Object.keys(ctx.expectedCounts ?? {}).filter((k) => k in COUNT_FIELDS);
+  const counts = ctx.expectedCounts ?? {};
+  const keys = Object.keys(counts).filter((k) => k in COUNT_FIELDS);
   if (!keys.length) return;
   let data: any;
   try { data = await ctx.dest.gql(`{ ${keys.map((k) => `${k}: ${COUNT_FIELDS[k]} { count }`).join(" ")} }`); }
   catch { add({ category: "counts", name: "Resource counts", outcome: "SKIPPED", actual: "count query failed on this API version" }); return; }
   for (const k of keys) {
-    const exp = ctx.expectedCounts![k], act = data[k]?.count;
+    const exp = counts[k];
+    if (exp === undefined) continue;
+    const act = data[k]?.count;
     add({ category: "counts", name: `${k} count`, expected: String(exp), actual: String(act),
       outcome: act === undefined ? "SKIPPED" : act === exp ? "PASS" : act > exp ? "WARN" : "FAIL" });   // extras can be store defaults
   }
@@ -280,7 +292,7 @@ async function crawl(ctx: VerifyCtx, L: Limits, pages: ExpectedPage[], add: (c: 
     for (const a of scanHtml(html).attrs) {
       if (!IMG_TAGS.has(a.tag) || !IMG_ATTRS.has(a.name)) continue;
       const raw = html.slice(a.start, a.end).replace(/&amp;/g, "&");
-      const cands = a.name.includes("srcset") ? raw.split(/,\s+/).map((s) => s.trim().split(/\s+/)[0]) : [raw];
+      const cands = a.name.includes("srcset") ? raw.split(/,\s+/).map((s) => s.trim().split(/\s+/)[0]).filter((s): s is string => Boolean(s)) : [raw];
       for (const c of cands) {
         try {
           const u = new URL(c, base + p.path);
@@ -312,7 +324,7 @@ async function crawl(ctx: VerifyCtx, L: Limits, pages: ExpectedPage[], add: (c: 
     const ct = r?.headers.get("content-type") ?? "";
     if (!r || (r.status !== 200 && r.status !== 206) || !/^(image|video)\//.test(ct)) {
       broken++;
-      addCapped({ category: "images", name: "Broken image or video", outcome: "FAIL", url: u, httpStatus: r?.status, expected: `referenced by ${imageRefs.get(u)}`, actual: r ? `status ${r.status}, ${ct || "no content type"}` : "request failed" });
+      addCapped({ category: "images", name: "Broken image or video", outcome: "FAIL", url: u, ...(r?.status !== undefined ? { httpStatus: r.status } : {}), expected: `referenced by ${imageRefs.get(u)}`, actual: r ? `status ${r.status}, ${ct || "no content type"}` : "request failed" });
     }
   });
   if (urls.length) add({ category: "images", name: "Images load", outcome: broken ? "WARN" : "PASS", expected: String(urls.length), actual: `${urls.length - broken} loaded` });
@@ -336,7 +348,10 @@ async function checkMedia(ctx: VerifyCtx, L: Limits, pages: ExpectedPage[], add:
         if (!n) return;
         const st = n.media.nodes.map((m) => m.status);
         if (st.includes("FAILED")) failed.add(n.handle);
-        else if (st.some((s) => s === "PROCESSING" || s === "UPLOADED")) next.push(chunk[k]);
+        else if (st.some((s) => s === "PROCESSING" || s === "UPLOADED")) {
+          const item = chunk[k];
+          if (item) next.push(item);
+        }
       });
     }
     pending = next;
@@ -420,8 +435,16 @@ export function buildSummary(ctx: VerifyCtx, checks: Check[], crawled: CrawlStat
     totals[c.outcome]++;
     (byCategory[c.category] ??= zero())[c.outcome]++;
     if (c.outcome === "FAIL" || c.outcome === "WARN") {
-      const k = `${c.outcome}:${c.name}`, e = issues.get(k) ?? { name: c.name, outcome: c.outcome, count: 0, example: c.url ?? c.actual };
-      e.count++; issues.set(k, e);
+      const k = `${c.outcome}:${c.name}`;
+      const exampleVal = c.url ?? c.actual;
+      const e = issues.get(k) ?? {
+        name: c.name,
+        outcome: c.outcome,
+        count: 0,
+        ...(exampleVal ? { example: exampleVal } : {}),
+      };
+      e.count++;
+      issues.set(k, e);
     }
   }
   const verdict = totals.FAIL ? "FAIL" : totals.WARN ? "PASS_WITH_WARNINGS" : "PASS";

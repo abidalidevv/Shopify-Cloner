@@ -5,8 +5,8 @@
 // Rule 2: two-sided consent. Source approves READING, destination confirms WRITING.
 
 import * as crypto from "node:crypto";
-import { prisma, startRun, boss, Q } from "./scheduler";
-import { authenticate } from "../shopify.server";   // from the Shopify app template
+import { prisma, startRun, boss, Q } from "./scheduler.js";
+import { authenticate } from "../shopify.server.js";   // from the Shopify app template
 
 /* ───────────────────────── Session verification ─────────────────────────
 authenticate.admin(request) does the heavy lifting:
@@ -31,7 +31,7 @@ export async function requireShop(request: Request, opts: { owner?: boolean } = 
 /* ───────────────────────── Code handling ───────────────────────── */
 
 const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";            // Crockford base32, no I L O U
-const makeCode = () => Array.from(crypto.randomBytes(8), (b) => ALPHABET[b % 32]).join("");  // 8 chars = 40 bits
+const makeCode = () => Array.from(crypto.randomBytes(8), (b) => ALPHABET[b % 32] ?? "0").join("");  // 8 chars = 40 bits
 // HMAC with a server-side pepper, so a leaked database can't be brute-forced offline.
 const hashCode = (code: string) => crypto.createHmac("sha256", process.env.PAIR_PEPPER!).update(code).digest("hex");
 
@@ -106,23 +106,29 @@ export async function approvePair(request: Request, pairId: string, allowed: str
   await audit(source.id, userId, "pair.approved", { pairId, allowed });
 }
 
-// 4. Destination: create the run. This is where billing, preflight and the scheduler connect.
+// 4. Destination: create the run. Preflight is read-only and runs before any pass is consumed.
 export async function createRun(request: Request, pairId: string) {
   const { shop: dest, userId } = await requireShop(request);
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: any) => {
     const pair = await tx.storePair.findFirst({ where: { id: pairId, destShopId: dest.id, status: "ACTIVE" } });
     if (!pair) throw new Response("pair not active", { status: 409 });
 
-    // Consume a clone pass atomically. consumedByRunId is @unique, so one pass can never fund two runs.
+    // Optional active entitlement (if merchant pre-purchased), but do not consume until confirmation
     const ent = await tx.entitlement.findFirst({ where: { shopId: dest.id, status: "ACTIVE" } });
-    if (!ent) throw new Response("payment required", { status: 402 });
 
     // The partial unique index (one active run per destination) rejects a second concurrent run.
     const run = await tx.cloneRun.create({
-      data: { mode: "DIRECT", pairId, destShopId: dest.id, status: "PREFLIGHT", selectedResources: pair.allowedResources, createdByUserId: userId, entitlementId: ent.id },
+      data: {
+        mode: "DIRECT",
+        pairId,
+        destShopId: dest.id,
+        status: "PREFLIGHT",
+        selectedResources: pair.allowedResources,
+        createdByUserId: userId,
+        entitlementId: ent?.id ?? null,
+      },
     });
-    await tx.entitlement.update({ where: { id: ent.id }, data: { status: "CONSUMED", consumedByRunId: run.id } });
-    return run;       // preflight runs (read-only, no pass spent beyond reservation); the report asks the destination owner to confirm
+    return run;       // preflight runs (read-only, no pass spent); the report asks the destination owner to confirm
   });
 }
 

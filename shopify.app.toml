@@ -1,0 +1,49 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "clonix_app_client_id_placeholder"
+name = "Clonix — Store Duplicator & Vault"
+handle = "clonix-store-duplicator"
+application_url = "https://app.clonix.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "clonix-dev.myshopify.com"
+
+[access_scopes]
+# Full-fidelity store duplication scopes
+scopes = "read_products,write_products,read_product_listings,read_collections,write_collections,read_themes,write_themes,read_files,write_files,read_metaobjects,write_metaobjects,read_content,write_content,read_inventory,write_inventory,read_locations"
+
+[auth]
+redirect_urls = [
+  "https://app.clonix.com/auth/callback",
+  "https://app.clonix.com/auth/shopify/callback",
+  "http://localhost:3000/auth/callback"
+]
+
+[webhooks]
+api_version = "2026-10"
+
+  [[webhooks.subscriptions]]
+  topics = ["app/uninstalled"]
+  uri = "/api/webhooks/app-uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = ["app_purchases_one_time/update"]
+  uri = "/api/webhooks/billing-update"
+
+  # Shopify Mandatory GDPR / Privacy Compliance Webhooks
+  [[webhooks.subscriptions]]
+  topics = ["customers/data_request"]
+  uri = "/api/compliance/customers-data-request"
+
+  [[webhooks.subscriptions]]
+  topics = ["customers/redact"]
+  uri = "/api/compliance/customers-redact"
+
+  [[webhooks.subscriptions]]
+  topics = ["shop/redact"]
+  uri = "/api/compliance/shop-redact"
+
+[pos]
+embedded = false

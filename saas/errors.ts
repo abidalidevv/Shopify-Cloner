@@ -12,3 +12,14 @@ export class Systemic extends Error {}
 
 /** The run was paused or cancelled while a task was in flight. Leave the task PENDING and stop quietly. */
 export class RunInactive extends Error {}
+
+/** A fatal remapping error occurred while processing an item. */
+export class RemapError extends Error {
+  code: string;
+  constructor(code: string, message: string) {
+    super(message);
+    this.code = code;
+    this.name = "RemapError";
+  }
+}
+

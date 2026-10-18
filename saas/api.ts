@@ -55,7 +55,11 @@ export function generateCrockfordToken(): string {
   const chars: string[] = [];
   for (let i = 0; i < 8; i++) {
     if (i === 4) chars.push("-");
-    chars.push(ALPHABET[bytes[i] % 32]);
+    const b = bytes[i];
+    if (b !== undefined) {
+      const ch = ALPHABET[b % 32];
+      if (ch) chars.push(ch);
+    }
   }
   return chars.join("");
 }

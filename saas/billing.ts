@@ -11,7 +11,7 @@
 //     destination's plan as part of the decision (see `shop.isDevStore`, set from shop.plan.partnerDevelopment).
 
 import * as crypto from "node:crypto";
-import { prisma } from "./scheduler";
+import { prisma } from "./scheduler.js";
 
 export const FREE_PRODUCT_LIMIT = 12;
 export const FREE_RUNS_PER_ORIGIN = 3;               // abuse cap: lifetime free runs per SOURCE shop
@@ -147,7 +147,7 @@ export async function verifyReturn(shopId: string, runId: string, gql: Gql): Pro
 // Call when stage 1 begins. Consuming earlier would charge for runs that die in preflight.
 
 export async function consumeCoverage(runId: string, destShopId: string, c: Coverage, ctx: { originShopGid: string; destShopGid: string; productCount: number }) {
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: any) => {
     if (c.kind === "FREE") {
       await tx.freeUsage.create({ data: { originShopGid: ctx.originShopGid, destShopGid: ctx.destShopGid, runId, productCount: ctx.productCount } });
     } else if (c.kind === "PASS" || c.kind === "SPONSORED") {

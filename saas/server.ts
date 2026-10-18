@@ -170,29 +170,40 @@ export function createServer(): http.Server {
       // GET /api/runs/:runId/progress
       if (method === "GET" && pathname.match(/^\/api\/runs\/[^/]+\/progress$/)) {
         const runId = pathname.split("/")[3];
-        const run = getRunProgress(runId);
-        if (!run) {
+        if (!runId) {
+          sendJson(res, 400, { error: "Missing runId parameter" });
+          return;
+        }
+
+        const clientEtag = typeof req.headers["if-none-match"] === "string" ? req.headers["if-none-match"] : undefined;
+        try {
+          const result = getRunProgress(runId, clientEtag);
+          if (result.notModified) {
+            res.writeHead(304, {
+              "Access-Control-Allow-Origin": "*",
+              ...(clientEtag ? { ETag: clientEtag } : {}),
+            });
+            res.end();
+            return;
+          }
+
+          if (result.run) {
+            sendJson(res, 200, result.run, { ETag: result.run.etag });
+            return;
+          }
+        } catch {
           sendJson(res, 404, { error: "Migration run not found" });
           return;
         }
-
-        const clientEtag = req.headers["if-none-match"];
-        if (clientEtag && clientEtag === run.etag) {
-          res.writeHead(304, {
-            "Access-Control-Allow-Origin": "*",
-            ETag: run.etag,
-          });
-          res.end();
-          return;
-        }
-
-        sendJson(res, 200, run, { ETag: run.etag });
-        return;
       }
 
       // GET /api/runs/:runId/parity
       if (method === "GET" && pathname.match(/^\/api\/runs\/[^/]+\/parity$/)) {
         const runId = pathname.split("/")[3];
+        if (!runId) {
+          sendJson(res, 400, { error: "Missing runId parameter" });
+          return;
+        }
         const scorecard = getParityScorecard(runId);
         sendJson(res, 200, { runId, items: scorecard });
         return;

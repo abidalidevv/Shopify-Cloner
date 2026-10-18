@@ -73,6 +73,7 @@ export function resolveGid(gid: string, idx: RemapIndex, final = false, extraDef
   const m = GID_RE.exec(gid);
   if (!m) return { status: "unmapped", kind: "UNKNOWN", typeName: "" };
   const typeName = m[1];
+  if (!typeName) return { status: "unmapped", kind: "UNKNOWN", typeName: "" };
   const k = KIND_BY_TYPE[typeName];
   if (k === "PASSTHROUGH") return { status: "passthrough", gid };
   if (!k) return { status: "unmapped", kind: "UNKNOWN", typeName };
@@ -109,7 +110,10 @@ export function fileRefOfPath(pathname: string): { folder: string; name: string 
   let m = /^\/s\/files\/1\/(?:\d{4}\/)+(files|products)\/(.+)$/.exec(pathname);
   if (!m) m = /^\/cdn\/shop\/(files|products)\/(.+)$/.exec(pathname);
   if (!m) return null;
-  return { folder: m[1], name: safeDecode(m[2].split("/").pop() ?? m[2]) };
+  const folder = m[1];
+  const restName = m[2];
+  if (!folder || !restName) return null;
+  return { folder, name: safeDecode(restName.split("/").pop() ?? restName) };
 }
 
 export interface RemapIndexOpts {
@@ -147,7 +151,7 @@ export class RemapIndex {
       let su: URL, du: URL;
       try { su = new URL(r.sourceUrl, "https://placeholder.invalid"); du = new URL(r.destUrl); } catch { return; }
       const learned = /^(\/s\/files\/1\/(?:\d{4}\/)+)/.exec(su.pathname);   // learn the real prefix from data
-      if (learned) this.cdnPrefixes.add(learned[1]);
+      if (learned && learned[1]) this.cdnPrefixes.add(learned[1]);
       const ref = fileRefOfPath(su.pathname);
       if (!ref) return;
       const hit: FileHit = { destUrl: r.destUrl, destGid: r.destGid, destName: safeDecode(du.pathname.split("/").pop() ?? "") };
@@ -220,18 +224,32 @@ function remapSeg(idx: RemapIndex, kind: MapKind, seg: string): string {
 function rewriteLinkPath(path: string, idx: RemapIndex): string {
   const m = /^(\/[a-z]{2}(?:-[a-zA-Z0-9]{2,4})?)?\/(products|collections|pages|blogs)\/(.+)$/.exec(path);
   if (!m) return path;
-  const loc = m[1] ?? "", kind = m[2];
-  const seg = m[3].split("/");
-  if (kind === "products") seg[0] = remapSeg(idx, "PRODUCT", seg[0]);
+  const loc = m[1] ?? "";
+  const kind = m[2];
+  const restSegs = m[3];
+  if (!kind || !restSegs) return path;
+  const seg = restSegs.split("/");
+  const firstSeg = seg[0];
+  if (firstSeg === undefined) return path;
+
+  if (kind === "products") seg[0] = remapSeg(idx, "PRODUCT", firstSeg);
   else if (kind === "collections") {
-    seg[0] = remapSeg(idx, "COLLECTION", seg[0]);
+    seg[0] = remapSeg(idx, "COLLECTION", firstSeg);
     if (seg[1] === "products" && seg[2] !== undefined) seg[2] = remapSeg(idx, "PRODUCT", seg[2]);
-  } else if (kind === "pages") seg[0] = remapSeg(idx, "PAGE", seg[0]);
+  } else if (kind === "pages") seg[0] = remapSeg(idx, "PAGE", firstSeg);
   else if (kind === "blogs") {
     const art = seg[1] !== undefined && seg[1] !== "tagged"
-      ? idx.handle("ARTICLE", `${safeDecode(seg[0])}/${safeDecode(seg[1])}`) : undefined;
-    if (art) { const [b, a] = art.split("/"); seg[0] = encodeURIComponent(b); seg[1] = encodeURIComponent(a); }
-    else seg[0] = remapSeg(idx, "BLOG", seg[0]);
+      ? idx.handle("ARTICLE", `${safeDecode(firstSeg)}/${safeDecode(seg[1])}`) : undefined;
+    if (art) {
+      const parts = art.split("/");
+      const b = parts[0];
+      const a = parts[1];
+      if (b !== undefined && a !== undefined) {
+        seg[0] = encodeURIComponent(b);
+        seg[1] = encodeURIComponent(a);
+      }
+    }
+    else seg[0] = remapSeg(idx, "BLOG", firstSeg);
   }
   return `${loc}/${kind}/${seg.join("/")}`;
 }
@@ -239,10 +257,15 @@ function rewriteLinkPath(path: string, idx: RemapIndex): string {
 function rewriteShopifyScheme(s: string, idx: RemapIndex, c: Collector): string {
   const m = /^shopify:\/\/([a-z_]+)\/(.+)$/i.exec(s);
   if (!m) return s;
-  const kind = m[1].toLowerCase(), rest = m[2];
+  const rawKind = m[1];
+  const rest = m[2];
+  if (!rawKind || !rest) return s;
+  const kind = rawKind.toLowerCase();
   if (kind === "shop_images" || kind === "files") {
     const parts = rest.split("/");
-    const found = idx.lookupFile("files", safeDecode(parts[parts.length - 1]));
+    const lastPart = parts[parts.length - 1];
+    if (!lastPart) return s;
+    const found = idx.lookupFile("files", safeDecode(lastPart));
     if (!found) { c.unresolvedUrls.push(s); return s; }
     c.stats.filesRewritten++;
     const dir = parts.length > 1 ? parts.slice(0, -1).join("/") + "/" : "";       // e.g. "videos/"
@@ -289,7 +312,7 @@ export function rewriteUrl(raw: string, idx: RemapIndex, c: Collector): string {
   if (cls === "cdn") { c.unresolvedUrls.push(s); return raw; }          // source CDN path that is not a file (e.g. theme asset)
 
   const tm = /^\/cdn\/shop\/t\/(\d+)\/assets\//.exec(u.pathname);       // theme assets carry the OLD theme id
-  if (tm) {
+  if (tm && tm[1]) {
     const nd = idx.theme(tm[1]);
     if (!nd) { if (cls === "source") c.unresolvedUrls.push(s); return raw; }
     c.stats.filesRewritten++;
@@ -322,7 +345,7 @@ export function scanHtml(html: string): { attrs: AttrSpan[]; styleBlocks: { star
     const nx = html[lt + 1];
     if (nx === "/" || nx === "!" || nx === "?") { const e = html.indexOf(">", lt + 1); i = e < 0 ? n : e + 1; continue; }
     const m = /^<([a-zA-Z][a-zA-Z0-9:-]*)/.exec(html.slice(lt, lt + 80));
-    if (!m) { i = lt + 1; continue; }
+    if (!m || !m[1]) { i = lt + 1; continue; }
     const tag = m[1].toLowerCase();
     let p = lt + m[0].length;
     for (;;) {
@@ -367,11 +390,19 @@ export function rewriteSrcset(val: string, f: (u: string) => string): string {
   const n = val.length;
   while (i < n) {
     let j = i;
-    while (j < n && (/\s/.test(val[j]) || val[j] === ",")) j++;
+    while (j < n) {
+      const ch = val[j];
+      if (ch !== undefined && (/\s/.test(ch) || ch === ",")) j++;
+      else break;
+    }
     out += val.slice(i, j); i = j;
     if (i >= n) break;
     let k = i;
-    while (k < n && !/\s/.test(val[k])) k++;
+    while (k < n) {
+      const ch = val[k];
+      if (ch !== undefined && !/\s/.test(ch)) k++;
+      else break;
+    }
     let url = val.slice(i, k), trailing = "";
     const tc = /,+$/.exec(url);
     if (tc) { trailing = tc[0]; url = url.slice(0, -trailing.length); }
@@ -522,8 +553,9 @@ export function remapMetafield(mf: SrcMetafield, idx: RemapIndex, c: Collector, 
       }
     }
     if (waiting.size) return { kind: "deferred", mf, waitingOn: [...waiting] };    // whole metafield waits, so partial lists never get written
-    if (!out.length) return { kind: "dropped", code: "NO_RESOLVABLE_REFERENCE", detail: id };
-    return set(isList ? JSON.stringify(out) : out[0]);
+    const firstOut = out[0];
+    if (!out.length || firstOut === undefined) return { kind: "dropped", code: "NO_RESOLVABLE_REFERENCE", detail: id };
+    return set(isList ? JSON.stringify(out) : firstOut);
   }
 
   switch (base) {
@@ -564,11 +596,23 @@ export interface SrcVariant {
   metafields: SrcMetafield[];
 }
 
-export interface FileSetInput { id?: string; originalSource?: string; contentType?: "IMAGE" | "VIDEO" | "EXTERNAL_VIDEO" | "MODEL_3D" | "FILE"; alt?: string }
+export interface FileSetInput {
+  id?: string | undefined;
+  originalSource?: string | undefined;
+  contentType?: "IMAGE" | "VIDEO" | "EXTERNAL_VIDEO" | "MODEL_3D" | "FILE" | undefined;
+  alt?: string | undefined;
+}
 export interface ProductSetInput {
-  title: string; handle: string; descriptionHtml: string; vendor?: string; productType?: string;
-  status: string; tags: string[]; templateSuffix?: string; category?: string;
-  seo?: { title?: string; description?: string };
+  title: string;
+  handle: string;
+  descriptionHtml: string;
+  vendor?: string | undefined;
+  productType?: string | undefined;
+  status: string;
+  tags: string[];
+  templateSuffix?: string | undefined;
+  category?: string | undefined;
+  seo?: { title?: string | undefined; description?: string | undefined } | undefined;
   productOptions: { name: string; position: number; values: { name: string }[] }[];
   files: FileSetInput[];
   variants: Record<string, unknown>[];

@@ -6,6 +6,9 @@
   "private": true,
   "scripts": {
     "build": "tsc",
+    "typecheck:src": "tsc --noEmit",
+    "typecheck:saas": "tsc --project tsconfig.saas.json --noEmit",
+    "typecheck": "tsc --noEmit && tsc --project tsconfig.saas.json --noEmit",
     "setup": "tsc && node dist/setup.js",
     "check:source": "tsc && node dist/check-source.js",
     "inventory": "tsc && node dist/inventory-cli.js",
@@ -32,8 +35,5 @@
     "eslint": "^9.0.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
-  },
-  "allowScripts": {
-    "esbuild@0.21.5": true
   }
 }
