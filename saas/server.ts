@@ -81,6 +81,8 @@ export function createServer(): http.Server {
     const pathname = parsedUrl.pathname;
     const method = req.method || "GET";
 
+    console.log(`[HTTP ${new Date().toISOString().slice(11, 19)}] ${method} ${pathname}${parsedUrl.search}`);
+
     // Handle CORS preflight
     if (method === "OPTIONS") {
       res.writeHead(204, {
@@ -230,6 +232,7 @@ export function createServer(): http.Server {
           "Content-Type": contentType,
           "Content-Length": content.length,
           "Cache-Control": filePath.endsWith("index.html") ? "no-cache" : "public, max-age=31536000, immutable",
+          "Content-Security-Policy": "frame-ancestors https://admin.shopify.com https://*.myshopify.com;",
         });
         res.end(content);
         return;
