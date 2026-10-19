@@ -15,6 +15,7 @@ import {
   getParityScorecard,
   getAvailablePlans,
 } from "./api.js";
+import { listSnapshots, createSnapshot, deleteSnapshot } from "./vault.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,6 +72,7 @@ function getContentType(filePath: string): string {
     case ".svg": return "image/svg+xml";
     case ".webp": return "image/webp";
     case ".ico": return "image/x-icon";
+    case ".zip": return "application/zip";
     default: return "application/octet-stream";
   }
 }
@@ -211,6 +213,29 @@ export function createServer(): http.Server {
         return;
       }
 
+      // GET /api/vault/snapshots
+      if (method === "GET" && pathname === "/api/vault/snapshots") {
+        sendJson(res, 200, { snapshots: listSnapshots() });
+        return;
+      }
+
+      // POST /api/vault/create-snapshot
+      if (method === "POST" && pathname === "/api/vault/create-snapshot") {
+        const body = await parseJsonBody(req);
+        const mode = body.mode === "FULL_OFFLINE_MEDIA" ? "FULL_OFFLINE_MEDIA" : "FAST_CDN";
+        const snap = createSnapshot(mode);
+        sendJson(res, 201, snap);
+        return;
+      }
+
+      // DELETE /api/vault/snapshots/:id
+      if (method === "DELETE" && pathname.startsWith("/api/vault/snapshots/")) {
+        const id = pathname.slice("/api/vault/snapshots/".length);
+        const success = deleteSnapshot(id);
+        sendJson(res, success ? 200 : 404, { success });
+        return;
+      }
+
       /* ───────────────────────── Static File Serving ───────────────────────── */
       let targetDir = fs.existsSync(FRONTEND_DIST) ? FRONTEND_DIST : PREVIEW_FALLBACK;
       let safePath = path.normalize(pathname).replace(/^(\.\.[/\\])+/, "");
@@ -228,12 +253,16 @@ export function createServer(): http.Server {
       if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
         const contentType = getContentType(filePath);
         const content = fs.readFileSync(filePath);
-        res.writeHead(200, {
+        const headers: Record<string, string | number> = {
           "Content-Type": contentType,
           "Content-Length": content.length,
           "Cache-Control": filePath.endsWith("index.html") ? "no-cache" : "public, max-age=31536000, immutable",
           "Content-Security-Policy": "frame-ancestors https://admin.shopify.com https://*.myshopify.com;",
-        });
+        };
+        if (filePath.endsWith(".zip")) {
+          headers["Content-Disposition"] = `attachment; filename="${path.basename(filePath)}"`;
+        }
+        res.writeHead(200, headers);
         res.end(content);
         return;
       }

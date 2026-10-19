@@ -47,11 +47,13 @@ export interface ParityItem {
 export interface VaultSnapshot {
   id: string;
   filename: string;
-  sizeMb: number;
+  sizeMb: number | string;
   createdAt: string;
   productCount: number;
   themeCount: number;
   hasMetafields: boolean;
+  mode?: "FAST_CDN" | "FULL_OFFLINE_MEDIA";
+  mediaCount?: number;
 }
 
 export interface BillingPlan {
