@@ -24,6 +24,29 @@ export interface ServerVaultSnapshot {
 
 let snapshotsStore: ServerVaultSnapshot[] = [
   {
+    id: "snap_media_tibbeshifa_live_2026_10_25",
+    filename: "tibbeshifa-full-media-vault-2026-10-25.zip",
+    sizeMb: "353.7 MB",
+    createdAt: "Oct 25, 2026 • 10:50 PM",
+    productCount: 7,
+    themeCount: 1,
+    hasMetafields: true,
+    mode: "FULL_OFFLINE_MEDIA",
+    mediaCount: 604,
+    downloadUrl: "/tibbeshifa-full-media-vault-2026-10-25.zip",
+  },
+  {
+    id: "snap_cloud_tibbeshifa_live_2026_10_25",
+    filename: "tibbeshifa-cloud-vault-2026-10-25.zip",
+    sizeMb: "1.75 MB",
+    createdAt: "Oct 25, 2026 • 10:40 PM",
+    productCount: 7,
+    themeCount: 1,
+    hasMetafields: true,
+    mode: "FAST_CDN",
+    downloadUrl: "/tibbeshifa-cloud-vault-2026-10-25.zip",
+  },
+  {
     id: "snap_full_media_latest",
     filename: "tibbeshifa-full-media-vault-2026-10-19.zip",
     sizeMb: "396.9 MB",
